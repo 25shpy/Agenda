@@ -44,8 +44,12 @@ textarea{min-height:64px;resize:vertical}
 .danger{color:var(--danger)}
 .fab{position:fixed;right:max(18px,calc((100vw - 720px)/2 + 18px));bottom:calc(72px + env(safe-area-inset-bottom));width:48px;height:48px;border-radius:50%;border:0;background:#171717;color:#fff;font-size:29px;line-height:48px;box-shadow:0 8px 20px rgba(0,0,0,.18)}
 .nav{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.96);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom));z-index:20}
-.navin{max-width:720px;margin:auto;display:grid;grid-template-columns:repeat(5,1fr)}
-.nav button{border:0;background:transparent;padding:10px 2px;font-size:11px;color:#777;touch-action:manipulation;-webkit-tap-highlight-color:transparent;min-height:44px}.nav button.active{color:#111;font-weight:700}
+.navin{max-width:720px;margin:auto;display:grid;grid-template-columns:repeat(6,1fr)}
+.nav button{border:0;background:transparent;padding:8px 2px;color:#777;touch-action:manipulation;-webkit-tap-highlight-color:transparent;min-height:46px;display:flex;align-items:center;justify-content:center}
+.nav button.active{color:#111}
+.nav svg{width:23px;height:23px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.nav .moreIcon{font-size:26px;line-height:1;letter-spacing:2px;transform:translateY(-2px)}
+.nav .editActive{color:#111;background:#f1f1f1;border-radius:12px}
 .calHead{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;margin-bottom:10px}
 .calTitle{text-align:center;font-size:21px;font-weight:700}
 .calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
@@ -79,7 +83,7 @@ h1{font-size:24px;margin:6px 0 14px}h2{font-size:18px;margin:18px 0 8px}
   <div class="header">
     <button class="hbtn" onclick="shift(-1)">‹</button>
     <div class="dateTitle" id="dateTitle" onclick="showView('calendar')"></div>
-    <button id="editBtn" class="hbtn" onclick="toggleEdit()" title="Düzenle">✎</button>
+    <button class="hbtn" onclick="shift(1)" title="Sonraki gün">›</button>
   </div>
   <div id="entries" class="list"></div>
   <button class="fab" onclick="addEntry()">+</button>
@@ -117,7 +121,7 @@ h1{font-size:24px;margin:6px 0 14px}h2{font-size:18px;margin:18px 0 8px}
 
 <section id="info" class="view">
   <h1>Bilgi</h1>
-  <div class="card"><b>Uygulama</b><div>Agenda PWA · v11</div></div>
+  <div class="card"><b>Uygulama</b><div>Agenda PWA · v12</div></div>
   <div class="card"><b>Kod / Hosting</b><div>GitHub Pages · 25shpy/Agenda</div></div>
   <div class="card"><b>Veritabanı</b><div>Google Firebase · Cloud Firestore</div></div>
   <div class="card"><b>Firebase Project</b><div>agenda-faf9b</div></div>
@@ -128,11 +132,24 @@ h1{font-size:24px;margin:6px 0 14px}h2{font-size:18px;margin:18px 0 8px}
 </main>
 
 <nav class="nav"><div class="navin">
-<button class="active" data-view="today" onclick="showView('today')">Gün</button>
-<button data-view="calendar" onclick="showView('calendar')">Takvim</button>
-<button data-view="search" onclick="showView('search')">Ara</button>
-<button data-view="settings" onclick="showView('settings')">Ayarlar</button>
-<button data-view="info" onclick="showView('info')">Bilgi</button>
+<button class="active" data-view="today" onclick="showView('today')" title="Gün" aria-label="Gün">
+  <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+</button>
+<button data-view="calendar" onclick="showView('calendar')" title="Takvim" aria-label="Takvim">
+  <svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 2v4M16 2v4M4 9h16"/></svg>
+</button>
+<button data-view="search" onclick="showView('search')" title="Ara" aria-label="Ara">
+  <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+</button>
+<button data-view="settings" onclick="showView('settings')" title="Ayarlar" aria-label="Ayarlar">
+  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.09A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.25.33.45.7.6 1 .12.35.2.72.2 1.1V13c0 .38-.08.75-.2 1.1-.15.3-.35.67-.6.9Z"/></svg>
+</button>
+<button data-view="info" onclick="showView('info')" title="Bilgi" aria-label="Bilgi">
+  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01"/></svg>
+</button>
+<button id="moreBtn" onclick="toggleEditFromNav()" title="Düzenle" aria-label="Düzenle">
+  <span class="moreIcon">•••</span>
+</button>
 </div></nav>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
@@ -276,7 +293,6 @@ function shortText(s=''){s=s.trim().replace(/\s+/g,' ');return s.length>90?s.sli
 
 function renderDay(){
  document.getElementById('dateTitle').textContent=pretty(current);
- document.getElementById('editBtn').classList.toggle('editOn',editMode);
  const list=db.entries.filter(e=>e.date===current).sort((a,b)=>(a.created||'').localeCompare(b.created||''));
  document.getElementById('entries').className='list'+(editMode?' editMode':'');
  document.getElementById('entries').innerHTML=list.map(e=>{
@@ -437,9 +453,24 @@ function setupAuth(){
  setCloudStatus('Firebase hazır · giriş bekleniyor','muted');
 }
 
+function toggleEditFromNav(){
+ if(!document.getElementById('today').classList.contains('active')){
+   showView('today');
+ }
+ editMode=!editMode;
+ const btn=document.getElementById('moreBtn');
+ if(btn) btn.classList.toggle('editActive',editMode);
+ renderDay();
+}
+
 function showView(v){
  document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.id===v));
- document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.view===v));
+ document.querySelectorAll('.nav button[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===v));
+ if(v!=='today' && editMode){
+   editMode=false;
+   const mb=document.getElementById('moreBtn');
+   if(mb) mb.classList.remove('editActive');
+ }
  if(v==='calendar')renderCalendar();
  if(v==='settings'||v==='search')renderSubjects();
 }
