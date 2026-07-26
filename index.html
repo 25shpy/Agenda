@@ -58,7 +58,7 @@ textarea{min-height:64px;resize:vertical}
 .card{border:1px solid var(--line);border-radius:12px;padding:11px;margin:8px 0}
 .result{padding:10px 2px;border-bottom:1px solid var(--line)}
 .authline{display:flex;align-items:center;gap:10px}.authline button{margin-left:auto}
-.muted{color:var(--muted);font-size:13px}
+.muted{color:var(--muted);font-size:13px}.cloudok{color:#177245}.clouderr{color:#b42318}.cloudsync{color:#9a6700}
 h1{font-size:24px;margin:6px 0 14px}h2{font-size:18px;margin:18px 0 8px}
 .settingsRow{display:flex;gap:7px;margin:7px 0}.settingsRow input{flex:1}
 .repeatSheet{display:none;margin-top:8px;padding:10px;border:1px dashed #ccc;border-radius:10px;background:rgba(255,255,255,.6)}
@@ -117,13 +117,13 @@ h1{font-size:24px;margin:6px 0 14px}h2{font-size:18px;margin:18px 0 8px}
 
 <section id="info" class="view">
   <h1>Bilgi</h1>
-  <div class="card"><b>Uygulama</b><div>Agenda PWA · v5</div></div>
+  <div class="card"><b>Uygulama</b><div>Agenda PWA · v6</div></div>
   <div class="card"><b>Kod / Hosting</b><div>GitHub Pages · 25shpy/Agenda</div></div>
   <div class="card"><b>Veritabanı</b><div>Google Firebase · Cloud Firestore</div></div>
   <div class="card"><b>Firebase Project</b><div>agenda-faf9b</div></div>
   <div class="card"><b>Giriş yapan hesap</b><div id="infoEmail" class="muted">Henüz giriş yapılmadı</div></div>
   <div class="card"><b>Firebase UID</b><div id="infoUid" class="muted">Giriş yaptıktan sonra burada görünecek.</div><button class="smallBtn" style="margin-top:8px" onclick="copyUid()">UID'yi kopyala</button></div>
-  <div class="card"><b>Veri durumu</b><div class="muted">Firestore güvenlik kuralı UID ile açılana kadar kayıtlar telefondaki yerel hafızada tutulur.</div></div>
+  <div class="card"><b>Veri durumu</b><div id="cloudStatus" class="muted">Google girişi bekleniyor.</div></div>
 </section>
 </main>
 
@@ -149,7 +149,7 @@ const firebaseConfig={
 };
 firebase.initializeApp(firebaseConfig);
 const auth=firebase.auth(),firestore=firebase.firestore();
-let currentUser=null;
+let currentUser=null,cloudReady=false,cloudApplying=false,cloudTimer=null,cloudUnsub=null;
 
 const K='agenda-v2'; // eski veriyi korumak için aynı anahtar
 const palette=[
@@ -160,7 +160,88 @@ const palette=[
 let db=load(),current=todayISO(),calCursor=new Date(),editMode=false,openPrev=new Set();
 
 function load(){try{return JSON.parse(localStorage.getItem(K))||{subjects:['Matematik','Fizik','Kimya'],entries:[]}}catch(e){return{subjects:['Matematik','Fizik','Kimya'],entries:[]}}}
-function save(){localStorage.setItem(K,JSON.stringify(db))}
+function save(){
+ localStorage.setItem(K,JSON.stringify(db));
+ if(currentUser&&cloudReady&&!cloudApplying)scheduleCloudSave();
+}
+function saveLocalOnly(){localStorage.setItem(K,JSON.stringify(db))}
+function cloudDoc(){return firestore.collection('users').doc(currentUser.uid).collection('agenda').doc('state')}
+function setCloudStatus(text,cls='muted'){const el=document.getElementById('cloudStatus');if(el){el.className=cls;el.textContent=text}}
+function scheduleCloudSave(){
+ clearTimeout(cloudTimer);
+ setCloudStatus('Kaydediliyor…','cloudsync');
+ cloudTimer=setTimeout(async()=>{
+   if(!currentUser||!cloudReady)return;
+   try{
+     await cloudDoc().set({
+       subjects:db.subjects,
+       entries:db.entries,
+       updatedAt:firebase.firestore.FieldValue.serverTimestamp(),
+       schemaVersion:1
+     },{merge:true});
+     setCloudStatus('Bulutta kayıtlı · Firestore','cloudok');
+   }catch(e){
+     console.error(e);
+     setCloudStatus('Bulut kayıt hatası: '+e.message,'clouderr');
+   }
+ },350);
+}
+async function startCloud(user){
+ if(cloudUnsub){cloudUnsub();cloudUnsub=null}
+ cloudReady=false;
+ setCloudStatus('Firestore bağlanıyor…','cloudsync');
+ try{
+   const ref=cloudDoc();
+   const snap=await ref.get();
+   if(snap.exists){
+     const x=snap.data();
+     if(Array.isArray(x.subjects)&&Array.isArray(x.entries)){
+       cloudApplying=true;
+       db={subjects:x.subjects,entries:x.entries};
+       saveLocalOnly();
+       cloudApplying=false;
+       renderAll();
+     }
+   }else{
+     await ref.set({
+       subjects:db.subjects,
+       entries:db.entries,
+       updatedAt:firebase.firestore.FieldValue.serverTimestamp(),
+       schemaVersion:1
+     });
+   }
+   cloudReady=true;
+   setCloudStatus('Bulutta kayıtlı · Firestore','cloudok');
+
+   cloudUnsub=ref.onSnapshot(s=>{
+     if(!s.exists||!cloudReady)return;
+     const x=s.data();
+     if(!Array.isArray(x.subjects)||!Array.isArray(x.entries))return;
+     const incoming=JSON.stringify({subjects:x.subjects,entries:x.entries});
+     const local=JSON.stringify(db);
+     if(incoming!==local){
+       cloudApplying=true;
+       db={subjects:x.subjects,entries:x.entries};
+       saveLocalOnly();
+       cloudApplying=false;
+       renderAll();
+     }
+     setCloudStatus('Bulutta kayıtlı · Firestore','cloudok');
+   },e=>{
+     console.error(e);
+     setCloudStatus('Firestore bağlantı hatası: '+e.message,'clouderr');
+   });
+ }catch(e){
+   console.error(e);
+   cloudReady=false;
+   setCloudStatus('Firestore erişimi reddedildi / bağlantı hatası: '+e.message,'clouderr');
+ }
+}
+function stopCloud(){
+ cloudReady=false;
+ if(cloudUnsub){cloudUnsub();cloudUnsub=null}
+ setCloudStatus('Google girişi bekleniyor.','muted');
+}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2)}
 function pad(n){return String(n).padStart(2,'0')}
 function iso(d){return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
@@ -277,7 +358,11 @@ function updateAuthUI(user){
 async function authAction(){try{if(currentUser){await auth.signOut();return}const provider=new firebase.auth.GoogleAuthProvider();await auth.signInWithRedirect(provider)}catch(e){alert('Giriş hatası: '+e.message)}}
 async function copyUid(){if(!currentUser){alert('Önce Google ile giriş yap.');return}try{await navigator.clipboard.writeText(currentUser.uid);alert('UID kopyalandı.')}catch(e){prompt('UID:',currentUser.uid)}}
 auth.getRedirectResult().catch(e=>alert('Google giriş hatası: '+e.message));
-auth.onAuthStateChanged(user=>updateAuthUI(user));
+auth.onAuthStateChanged(async user=>{
+ updateAuthUI(user);
+ if(user) await startCloud(user);
+ else stopCloud();
+});
 
 function showView(v){
  document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.id===v));
