@@ -129,7 +129,7 @@ h1{font-size:24px;margin:6px 0 14px}h2{font-size:18px;margin:18px 0 8px}
 
 <section id="info" class="view">
   <h1>Bilgi</h1>
-  <div class="card"><b>Uygulama</b><div>Agenda PWA · v20</div></div>
+  <div class="card"><b>Uygulama</b><div>Agenda PWA · v21</div></div>
   <div class="card"><b>Kod / Hosting</b><div>GitHub Pages · 25shpy/Agenda</div></div>
   <div class="card"><b>Veritabanı</b><div>Google Firebase · Cloud Firestore</div></div>
   <div class="card"><b>Firebase Project</b><div>agenda-faf9b</div></div>
@@ -323,7 +323,7 @@ function renderDay(){
             onpointerup="swipeEnd(event,'${e.id}')"
             onpointercancel="swipeCancel(event,'${e.id}')">
 
-         <div class="rowMain" onclick="rowTap(event,'${e.id}')">
+         <div class="rowMain">
            <div class="subject" style="color:${fg}">●&nbsp; ${esc(e.subject)}</div>
            <div class="text">${esc(e.text||'')}</div>
            <button class="prevToggle" onclick="event.stopPropagation();togglePrevious('${e.id}')">${p?'↶':''}</button>
@@ -362,16 +362,11 @@ function renderDay(){
    </div>`
  }).join('');
 }
-function rowTap(ev,id){
- if(touchState && touchState.moved) return;
-
- if(swipedId){
-   if(swipedId===id){
-     swipedId=null;
-     renderDay();
-     return;
-   }
+function toggleEditRow(id){
+ if(swipedId===id){
    swipedId=null;
+   renderDay();
+   return;
  }
 
  if(openEdit.has(id)){
@@ -394,17 +389,21 @@ function swipeStart(ev,id){
  const el=document.querySelector(`[data-swipe-id="${id}"]`);
  if(!el)return;
 
- try{el.setPointerCapture(ev.pointerId)}catch(_){}
  touchState={
    id,
    pointerId:ev.pointerId,
    startX:ev.clientX,
    startY:ev.clientY,
    dx:0,
+   dy:0,
    moved:false,
    horizontal:false,
-   base:swipedId===id?-150:0
+   vertical:false,
+   base:swipedId===id?-150:0,
+   startedAt:Date.now()
  };
+
+ try{el.setPointerCapture(ev.pointerId)}catch(_){}
  el.classList.add('dragging');
 }
 
@@ -413,16 +412,24 @@ function swipeMove(ev,id){
 
  const dx=ev.clientX-touchState.startX;
  const dy=ev.clientY-touchState.startY;
+ touchState.dx=dx;
+ touchState.dy=dy;
 
- if(!touchState.horizontal){
-   if(Math.abs(dx)<6 && Math.abs(dy)<6)return;
-   if(Math.abs(dy)>Math.abs(dx))return;
-   touchState.horizontal=true;
+ if(!touchState.horizontal && !touchState.vertical){
+   if(Math.abs(dx)<8 && Math.abs(dy)<8)return;
+
+   if(Math.abs(dx)>Math.abs(dy)+4){
+     touchState.horizontal=true;
+     touchState.moved=true;
+   }else{
+     touchState.vertical=true;
+     return;
+   }
  }
 
+ if(!touchState.horizontal)return;
+
  ev.preventDefault();
- touchState.dx=dx;
- touchState.moved=true;
 
  const el=document.querySelector(`[data-swipe-id="${id}"]`);
  if(!el)return;
@@ -443,15 +450,29 @@ function swipeEnd(ev,id){
    el.style.removeProperty('transform');
  }
 
+ touchState=null;
+
  if(state.horizontal){
    const finalX=state.base+state.dx;
-   if(finalX < -55) swipedId=id;
-   else if(finalX > -95) swipedId=null;
+
+   if(finalX < -60){
+     swipedId=id;
+   }else if(finalX > -90){
+     swipedId=null;
+   }
+
+   renderDay();
+   return;
  }
 
- touchState={moved:state.moved};
- renderDay();
- setTimeout(()=>{touchState=null},40);
+ // vertical scroll: do nothing
+ if(state.vertical) return;
+
+ // genuine tap: toggle edit or close open swipe
+ const duration=Date.now()-state.startedAt;
+ if(Math.abs(state.dx)<8 && Math.abs(state.dy)<8 && duration<700){
+   toggleEditRow(id);
+ }
 }
 
 function swipeCancel(ev,id){
@@ -461,7 +482,6 @@ function swipeCancel(ev,id){
    el.style.removeProperty('transform');
  }
  touchState=null;
- renderDay();
 }
 
 function openRepeatSwipe(id){
@@ -760,4 +780,18 @@ if('serviceWorker' in navigator){
 }
 .editPanel{background:var(--row-bg) !important;}
 .repeatSheet{background:rgba(255,255,255,.72) !important;}
+</style>
+
+<style>
+.swipeActions{
+  z-index:10 !important;
+}
+.swipeActions button{
+  position:relative !important;
+  z-index:11 !important;
+  pointer-events:auto !important;
+}
+.swipeContent{
+  z-index:5 !important;
+}
 </style>
