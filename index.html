@@ -117,7 +117,7 @@ h1{font-size:24px;margin:6px 0 14px}h2{font-size:18px;margin:18px 0 8px}
 
 <section id="info" class="view">
   <h1>Bilgi</h1>
-  <div class="card"><b>Uygulama</b><div>Agenda PWA · v6</div></div>
+  <div class="card"><b>Uygulama</b><div>Agenda PWA · v7</div></div>
   <div class="card"><b>Kod / Hosting</b><div>GitHub Pages · 25shpy/Agenda</div></div>
   <div class="card"><b>Veritabanı</b><div>Google Firebase · Cloud Firestore</div></div>
   <div class="card"><b>Firebase Project</b><div>agenda-faf9b</div></div>
@@ -355,9 +355,22 @@ function updateAuthUI(user){
  if(user){st.textContent=user.email||'Google hesabı';btn.textContent='Çıkış yap';ie.textContent=user.email||'';iu.textContent=user.uid}
  else{st.textContent='Giriş yapılmadı';btn.textContent='Google ile giriş';ie.textContent='Henüz giriş yapılmadı';iu.textContent='Giriş yaptıktan sonra burada görünecek.'}
 }
-async function authAction(){try{if(currentUser){await auth.signOut();return}const provider=new firebase.auth.GoogleAuthProvider();await auth.signInWithRedirect(provider)}catch(e){alert('Giriş hatası: '+e.message)}}
+async function authAction(){
+ try{
+   if(currentUser){await auth.signOut();return}
+   const provider=new firebase.auth.GoogleAuthProvider();
+   provider.setCustomParameters({prompt:'select_account'});
+   const result=await auth.signInWithPopup(provider);
+   if(result && result.user){
+     updateAuthUI(result.user);
+     await startCloud(result.user);
+   }
+ }catch(e){
+   console.error(e);
+   alert('Google giriş hatası: '+e.message);
+ }
+}
 async function copyUid(){if(!currentUser){alert('Önce Google ile giriş yap.');return}try{await navigator.clipboard.writeText(currentUser.uid);alert('UID kopyalandı.')}catch(e){prompt('UID:',currentUser.uid)}}
-auth.getRedirectResult().catch(e=>alert('Google giriş hatası: '+e.message));
 auth.onAuthStateChanged(async user=>{
  updateAuthUI(user);
  if(user) await startCloud(user);
