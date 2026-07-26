@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#f5f1ea">
+<meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Agenda">
@@ -11,250 +11,284 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>Agenda</title>
 <style>
-:root{--bg:#f5f1ea;--paper:#fffdf9;--text:#1d1d1f;--muted:#777;--line:#e5ded4;--card:#fff;--danger:#b42318}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Arial,sans-serif}
-.app{max-width:760px;margin:auto;min-height:100vh;background:var(--paper);padding:calc(14px + env(safe-area-inset-top)) 14px calc(86px + env(safe-area-inset-bottom))}
-h1{font-size:27px;margin:8px 0 14px}h2{font-size:20px}.muted{color:var(--muted);font-size:13px}
+:root{
+  --bg:#fff;--text:#171717;--muted:#777;--line:#ececec;--danger:#c62828;
+  --shadow:0 1px 3px rgba(0,0,0,.04)
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Arial,sans-serif}
+.app{max-width:720px;margin:auto;min-height:100vh;padding:calc(14px + env(safe-area-inset-top)) 14px calc(72px + env(safe-area-inset-bottom))}
 .view{display:none}.view.active{display:block}
-.top{display:flex;gap:8px;align-items:center}.top input{flex:1}
-button,input,select,textarea{font:inherit}button,.btn{border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px 12px}
-input,select,textarea{border:1px solid var(--line);border-radius:11px;background:#fff;padding:10px;width:100%}
-textarea{min-height:72px;resize:vertical}
-.entry{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;margin:9px 0}
-.entryrow{display:grid;grid-template-columns:135px 1fr 42px;gap:7px;align-items:start}.entry textarea{min-height:48px}
-.iconbtn{padding:10px 5px}.danger{color:var(--danger)}
-.add{width:100%;margin-top:8px;font-weight:600}
-.nav{position:fixed;left:0;right:0;bottom:0;background:rgba(255,253,249,.96);border-top:1px solid var(--line);padding:7px 8px calc(7px + env(safe-area-inset-bottom));display:flex;justify-content:center;z-index:10}
-.navin{width:min(760px,100%);display:grid;grid-template-columns:repeat(5,1fr);gap:5px}.nav button{border:0;background:transparent;padding:7px 2px;font-size:12px}.nav button.active{font-weight:700}
-.calhead{display:flex;justify-content:space-between;align-items:center}.calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.dow{text-align:center;font-size:11px;color:var(--muted);padding:7px 0}
-.day{min-height:48px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:5px;text-align:left;position:relative}.day.blank{visibility:hidden}.day.today{font-weight:700}.dot{position:absolute;width:6px;height:6px;border-radius:50%;background:#111;bottom:5px;left:50%}
-.settingsRow{display:flex;gap:7px;margin:7px 0}.settingsRow input{flex:1}.settingsRow button{width:auto}
-.searchrow{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:7px}.result{padding:10px 0;border-bottom:1px solid var(--line)}.result b{display:block;font-size:13px;margin-bottom:3px}
-.authbox{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:14px}
-.authline{display:flex;gap:8px;align-items:center}.authline button{margin-left:auto}
-.infocard{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;margin:10px 0}
-.infocard code{word-break:break-all;font-size:12px}.warn{color:#9a6700}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:flex-end;z-index:30}.modal.show{display:flex}.sheet{background:var(--paper);width:100%;max-width:760px;margin:auto;border-radius:18px 18px 0 0;padding:18px 14px calc(20px + env(safe-area-inset-bottom));max-height:88vh;overflow:auto}.checks{display:grid;grid-template-columns:1fr 1fr;gap:7px}.checks label{background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px}
-.actions{display:flex;gap:7px;margin-top:12px}.actions button{flex:1}
-.prevline{margin-top:7px;padding:8px 10px;border-radius:10px;background:#f7f4ef;color:var(--muted);font-size:12px;cursor:pointer}
-.prevline b{color:var(--text)}.prevbtn{font-size:18px;line-height:1;padding:9px 5px}
-.popover{position:fixed;inset:0;background:rgba(0,0,0,.28);display:none;align-items:flex-end;z-index:40}.popover.show{display:flex}
-.popcard{width:100%;max-width:760px;margin:auto;background:var(--paper);border-radius:18px 18px 0 0;padding:18px 14px calc(20px + env(safe-area-inset-bottom))}
-.poptext{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0;white-space:pre-wrap}
-@media(max-width:430px){.entryrow{grid-template-columns:112px 1fr 38px}.searchrow{grid-template-columns:1fr}}
+.header{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;gap:8px;margin-bottom:14px}
+.hbtn{border:0;background:transparent;font-size:28px;padding:4px;border-radius:10px}
+.dateTitle{text-align:center;font-weight:700;font-size:21px}
+.editOn{background:#f1f1f1}
+.list{display:flex;flex-direction:column;gap:7px}
+.row{border-radius:12px;padding:0;overflow:hidden;box-shadow:var(--shadow)}
+.rowMain{min-height:58px;display:grid;grid-template-columns:150px 1fr 36px;gap:8px;align-items:center;padding:10px 12px;cursor:pointer}
+.subject{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prevToggle{border:0;background:transparent;font-size:21px;padding:5px;opacity:.7}
+.prevBox{display:none;border-top:1px solid rgba(0,0,0,.06);padding:10px 12px;font-size:13px;line-height:1.4}
+.prevBox.show{display:block}
+.prevDate{font-weight:700;margin-bottom:3px}
+.editPanel{display:none;border-top:1px solid rgba(0,0,0,.06);padding:10px 12px}
+.editMode .editPanel{display:block}
+.editMode .rowMain{cursor:default}
+.editGrid{display:grid;grid-template-columns:140px 1fr;gap:8px}
+input,select,textarea,button{font:inherit}
+input,select,textarea{width:100%;border:1px solid #ddd;background:#fff;border-radius:9px;padding:9px}
+textarea{min-height:64px;resize:vertical}
+.editActions{display:flex;gap:8px;margin-top:8px}
+.smallBtn{border:1px solid #ddd;background:#fff;border-radius:9px;padding:8px 10px}
+.danger{color:var(--danger)}
+.fab{position:fixed;right:max(18px,calc((100vw - 720px)/2 + 18px));bottom:calc(72px + env(safe-area-inset-bottom));width:48px;height:48px;border-radius:50%;border:0;background:#171717;color:#fff;font-size:29px;line-height:48px;box-shadow:0 8px 20px rgba(0,0,0,.18)}
+.nav{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.96);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom));z-index:20}
+.navin{max-width:720px;margin:auto;display:grid;grid-template-columns:repeat(5,1fr)}
+.nav button{border:0;background:transparent;padding:7px 2px;font-size:11px;color:#777}.nav button.active{color:#111;font-weight:700}
+.calHead{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;margin-bottom:10px}
+.calTitle{text-align:center;font-size:21px;font-weight:700}
+.calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.dow{text-align:center;font-size:11px;color:#888;padding:7px 0}
+.day{min-height:62px;border:0;background:transparent;border-radius:12px;padding:7px 3px;text-align:center}
+.day.today{background:#f2f2f2;font-weight:700}.day.blank{visibility:hidden}
+.dots{display:flex;justify-content:center;gap:3px;flex-wrap:wrap;margin-top:7px;min-height:7px}
+.dot{width:6px;height:6px;border-radius:50%}
+.formRow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.card{border:1px solid var(--line);border-radius:12px;padding:11px;margin:8px 0}
+.result{padding:10px 2px;border-bottom:1px solid var(--line)}
+.authline{display:flex;align-items:center;gap:10px}.authline button{margin-left:auto}
+.muted{color:var(--muted);font-size:13px}
+h1{font-size:24px;margin:6px 0 14px}h2{font-size:18px;margin:18px 0 8px}
+.settingsRow{display:flex;gap:7px;margin:7px 0}.settingsRow input{flex:1}
+.repeatSheet{display:none;margin-top:8px;padding:10px;border:1px dashed #ccc;border-radius:10px;background:rgba(255,255,255,.6)}
+.repeatSheet.show{display:block}
+.checks{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.checks label{font-size:13px}
+@media(max-width:430px){
+  .rowMain{grid-template-columns:115px 1fr 34px}
+  .editGrid{grid-template-columns:1fr}
+  .formRow{grid-template-columns:1fr}
+}
 </style>
 </head>
-<body><main class="app">
+<body>
+<main class="app">
+
 <section id="today" class="view active">
-<div class="top"><button onclick="shift(-1)">‹</button><input id="date" type="date"><button onclick="shift(1)">›</button></div>
-<h1 id="dateTitle"></h1><div id="entries"></div><button class="add" onclick="addEntry()">+ Yeni satır</button>
+  <div class="header">
+    <button class="hbtn" onclick="shift(-1)">‹</button>
+    <div class="dateTitle" id="dateTitle" onclick="showView('calendar')"></div>
+    <button id="editBtn" class="hbtn" onclick="toggleEdit()" title="Düzenle">✎</button>
+  </div>
+  <div id="entries" class="list"></div>
+  <button class="fab" onclick="addEntry()">+</button>
 </section>
 
 <section id="calendar" class="view">
-<div class="calhead"><button onclick="calShift(-1)">‹</button><h1 id="calTitle"></h1><button onclick="calShift(1)">›</button></div>
-<div class="calgrid" id="calendarGrid"></div>
+  <div class="calHead">
+    <button class="hbtn" onclick="calShift(-1)">‹</button>
+    <div id="calTitle" class="calTitle"></div>
+    <button class="hbtn" onclick="calShift(1)">›</button>
+  </div>
+  <div id="calendarGrid" class="calgrid"></div>
 </section>
 
 <section id="search" class="view">
-<h1>Ara</h1>
-<div class="searchrow"><select id="searchSubject"></select><input id="searchText" placeholder="Metinde ara"></div>
-<div class="searchrow"><input id="searchFrom" type="date"><input id="searchTo" type="date"></div>
-<button class="add" onclick="runSearch()">Ara</button><div id="results"></div>
+  <h1>Ara</h1>
+  <div class="formRow"><select id="searchSubject"></select><input id="searchText" placeholder="Metinde ara"></div>
+  <div class="formRow"><input id="searchFrom" type="date"><input id="searchTo" type="date"></div>
+  <button class="smallBtn" onclick="runSearch()">Ara</button>
+  <div id="results"></div>
 </section>
 
 <section id="settings" class="view">
-<h1>Ayarlar</h1>
-<div class="authbox">
-<div class="authline"><div><b>Google hesabı</b><div id="authStatus" class="muted">Giriş yapılmadı</div></div>
-<button id="authButton" onclick="authAction()">Google ile giriş</button></div>
-</div><h2>Başlıklar</h2><div class="muted">Dropdown'da çıkacak başlıkları burada tanımla.</div>
-<div id="subjects"></div><div class="settingsRow"><input id="newSubject" placeholder="Yeni başlık"><button onclick="addSubject()">Ekle</button></div>
-<h2>Yedek</h2><div class="actions"><button onclick="exportData()">Yedek indir</button><button onclick="document.getElementById('importFile').click()">Yedek yükle</button></div>
-<input id="importFile" type="file" accept=".json,application/json" hidden>
+  <h1>Ayarlar</h1>
+  <div class="card">
+    <div class="authline"><div><b>Google hesabı</b><div id="authStatus" class="muted">Giriş yapılmadı</div></div><button id="authButton" class="smallBtn" onclick="authAction()">Google ile giriş</button></div>
+  </div>
+  <h2>Başlıklar</h2>
+  <div id="subjects"></div>
+  <div class="settingsRow"><input id="newSubject" placeholder="Yeni başlık"><button class="smallBtn" onclick="addSubject()">Ekle</button></div>
+  <h2>Yedek</h2>
+  <div class="editActions"><button class="smallBtn" onclick="exportData()">Yedek indir</button><button class="smallBtn" onclick="document.getElementById('importFile').click()">Yedek yükle</button></div>
+  <input id="importFile" type="file" accept=".json,application/json" hidden>
 </section>
 
 <section id="info" class="view">
-<h1>Bilgi</h1>
-<div class="infocard"><b>Uygulama</b><div>Agenda PWA</div></div>
-<div class="infocard"><b>Kod / Hosting</b><div>GitHub Pages · 25shpy/Agenda</div></div>
-<div class="infocard"><b>Veritabanı</b><div>Google Firebase · Cloud Firestore</div></div>
-<div class="infocard"><b>Firebase Project</b><div><code>agenda-faf9b</code></div></div>
-<div class="infocard"><b>Giriş yapan hesap</b><div id="infoEmail" class="muted">Henüz giriş yapılmadı</div></div>
-<div class="infocard"><b>Firebase UID</b><div id="infoUid" class="muted">Giriş yaptıktan sonra burada görünecek.</div><button style="margin-top:8px" onclick="copyUid()">UID'yi kopyala</button></div>
-<div class="infocard"><b>Veri durumu</b><div id="cloudStatus" class="warn">Şimdilik yerel kayıt kullanılıyor. UID ile Rules açıldıktan sonra Firestore senkronizasyonunu etkinleştireceğiz.</div></div>
-<div class="infocard"><b>Sürüm</b><div>v4</div></div>
+  <h1>Bilgi</h1>
+  <div class="card"><b>Uygulama</b><div>Agenda PWA · v5</div></div>
+  <div class="card"><b>Kod / Hosting</b><div>GitHub Pages · 25shpy/Agenda</div></div>
+  <div class="card"><b>Veritabanı</b><div>Google Firebase · Cloud Firestore</div></div>
+  <div class="card"><b>Firebase Project</b><div>agenda-faf9b</div></div>
+  <div class="card"><b>Giriş yapan hesap</b><div id="infoEmail" class="muted">Henüz giriş yapılmadı</div></div>
+  <div class="card"><b>Firebase UID</b><div id="infoUid" class="muted">Giriş yaptıktan sonra burada görünecek.</div><button class="smallBtn" style="margin-top:8px" onclick="copyUid()">UID'yi kopyala</button></div>
+  <div class="card"><b>Veri durumu</b><div class="muted">Firestore güvenlik kuralı UID ile açılana kadar kayıtlar telefondaki yerel hafızada tutulur.</div></div>
 </section>
-
 </main>
 
 <nav class="nav"><div class="navin">
-<button class="active" data-view="today">Bugün</button><button data-view="calendar">Takvim</button><button data-view="search">Ara</button><button data-view="settings">Ayarlar</button><button data-view="info">Bilgi</button>
+<button class="active" data-view="today">Gün</button>
+<button data-view="calendar">Takvim</button>
+<button data-view="search">Ara</button>
+<button data-view="settings">Ayarlar</button>
+<button data-view="info">Bilgi</button>
 </div></nav>
 
-<div id="repeatModal" class="modal"><div class="sheet">
-<h2>Tekrarla</h2><div class="muted">Bu satırı seçtiğin günlerde tarih aralığına kopyalar.</div>
-<div class="searchrow"><input id="repFrom" type="date"><input id="repTo" type="date"></div>
-<div class="checks" id="weekdayChecks"></div>
-<div class="actions"><button onclick="closeRepeat()">Vazgeç</button><button onclick="applyRepeat()">Oluştur</button></div>
-</div></div>
-
-<div id="deleteModal" class="modal"><div class="sheet">
-<h2>Kaydı sil</h2><div id="deleteChoices"></div><div class="actions"><button onclick="closeDelete()">Vazgeç</button></div>
-</div></div>
-
-<div id="prevPopover" class="popover"><div class="popcard">
-<h2 id="prevTitle">Önceki kayıt</h2>
-<div id="prevDate" class="muted"></div>
-<div id="prevText" class="poptext"></div>
-<div class="actions"><button onclick="closePrevious()">Kapat</button><button id="prevGo">O güne git</button></div>
-</div></div>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 <script>
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDMFvDhKKuiIpLalznUVHBh0tXLpU9_8UU",
-  authDomain: "agenda-faf9b.firebaseapp.com",
-  projectId: "agenda-faf9b",
-  storageBucket: "agenda-faf9b.firebasestorage.app",
-  messagingSenderId: "1013124260211",
-  appId: "1:1013124260211:web:ee7543a223e6f6b4a6a506"
+const firebaseConfig={
+  apiKey:"AIzaSyDMFvDhKKuiIpLalznUVHBh0tXLpU9_8UU",
+  authDomain:"agenda-faf9b.firebaseapp.com",
+  projectId:"agenda-faf9b",
+  storageBucket:"agenda-faf9b.firebasestorage.app",
+  messagingSenderId:"1013124260211",
+  appId:"1:1013124260211:web:ee7543a223e6f6b4a6a506"
 };
 firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const firestore = firebase.firestore();
-let currentUser = null;
+const auth=firebase.auth(),firestore=firebase.firestore();
+let currentUser=null;
 
-const K='agenda-v2';
-let db=load(), current=todayISO(), calCursor=new Date(), repeatId=null, deleteId=null;
+const K='agenda-v2'; // eski veriyi korumak için aynı anahtar
+const palette=[
+  ['#2e7d32','#eef8ee'],['#1565c0','#eef5ff'],['#d28a00','#fff8e7'],
+  ['#6a3dc5','#f5f0ff'],['#c62828','#fff0f0'],['#00838f','#eefafa'],
+  ['#ef6c00','#fff3ea'],['#5d4037','#f7f1ef'],['#455a64','#f1f4f5']
+];
+let db=load(),current=todayISO(),calCursor=new Date(),editMode=false,openPrev=new Set();
+
 function load(){try{return JSON.parse(localStorage.getItem(K))||{subjects:['Matematik','Fizik','Kimya'],entries:[]}}catch(e){return{subjects:['Matematik','Fizik','Kimya'],entries:[]}}}
 function save(){localStorage.setItem(K,JSON.stringify(db))}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2)}
-function pad(n){return String(n).padStart(2,'0')} function iso(d){return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
+function pad(n){return String(n).padStart(2,'0')}
+function iso(d){return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
 function todayISO(){return iso(new Date())}
-function parseISO(s){let [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)}
+function parseISO(s){let[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)}
 function pretty(s){return new Intl.DateTimeFormat('tr-TR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(parseISO(s))}
-function subjectOptions(sel, all=false){let x=all?'<option value="">Tüm başlıklar</option>':'';return x+db.subjects.map(s=>`<option ${s===sel?'selected':''}>${esc(s)}</option>`).join('')}
-function esc(s=''){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-
-function previousFor(e){
- return db.entries.filter(x=>x.subject===e.subject && x.date<e.date)
-   .sort((a,b)=>b.date.localeCompare(a.date)||(b.created||'').localeCompare(a.created||''))[0]||null
-}
-function shortDate(s){return new Intl.DateTimeFormat('tr-TR',{day:'numeric',month:'short',year:'numeric'}).format(parseISO(s))}
-function shortText(s=''){s=s.trim().replace(/\s+/g,' ');return s.length>75?s.slice(0,75)+'…':s||'(boş kayıt)'}
-function changeSubject(id,v){updateEntry(id,'subject',v);renderDay()}
-function showPrevious(id){
- let e=db.entries.find(x=>x.id===id),p=e?previousFor(e):null;
- if(!p){alert('Bu başlık için daha eski kayıt yok.');return}
- document.getElementById('prevTitle').textContent='Önceki '+e.subject+' kaydı';
- document.getElementById('prevDate').textContent=pretty(p.date);
- document.getElementById('prevText').textContent=p.text||'(boş kayıt)';
- document.getElementById('prevGo').onclick=()=>{closePrevious();goDate(p.date)};
- document.getElementById('prevPopover').classList.add('show')
-}
-function closePrevious(){document.getElementById('prevPopover').classList.remove('show')}
+function esc(s=''){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function subjectIndex(subject){let i=db.subjects.indexOf(subject);return i<0?0:i}
+function colors(subject){return palette[subjectIndex(subject)%palette.length]}
+function subjectOptions(sel,all=false){return (all?'<option value="">Tüm başlıklar</option>':'')+db.subjects.map(s=>`<option ${s===sel?'selected':''}>${esc(s)}</option>`).join('')}
+function previousFor(e){return db.entries.filter(x=>x.subject===e.subject&&x.date<e.date).sort((a,b)=>b.date.localeCompare(a.date)||(b.created||'').localeCompare(a.created||''))[0]||null}
+function shortText(s=''){s=s.trim().replace(/\s+/g,' ');return s.length>90?s.slice(0,90)+'…':s||'(boş)'}
 
 function renderDay(){
- document.getElementById('date').value=current; document.getElementById('dateTitle').textContent=pretty(current);
- let list=db.entries.filter(e=>e.date===current).sort((a,b)=>(a.created||'').localeCompare(b.created||''));
- document.getElementById('entries').innerHTML=list.map(e=>`<div class="entry"><div class="entryrow">
- <div style="display:flex;gap:5px"><select onchange="changeSubject('${e.id}',this.value)">${subjectOptions(e.subject)}</select><button class="prevbtn" onclick="showPrevious('${e.id}')" title="Önceki kayıt">↶</button></div>
- <textarea placeholder="Ne yaptın / ne yapacaksın?" oninput="updateEntry('${e.id}','text',this.value)">${esc(e.text)}</textarea>
- <button class="iconbtn" onclick="openDelete('${e.id}')">×</button></div>
- ${previousFor(e)?`<div class="prevline" onclick="showPrevious('${e.id}')"><b>Önceki:</b> ${shortDate(previousFor(e).date)} — ${esc(shortText(previousFor(e).text))}</div>`:''}
- <div class="actions"><button onclick="openRepeat('${e.id}')">↻ Tekrarla</button></div></div>`).join('');
+ document.getElementById('dateTitle').textContent=pretty(current);
+ document.getElementById('editBtn').classList.toggle('editOn',editMode);
+ const list=db.entries.filter(e=>e.date===current).sort((a,b)=>(a.created||'').localeCompare(b.created||''));
+ document.getElementById('entries').className='list'+(editMode?' editMode':'');
+ document.getElementById('entries').innerHTML=list.map(e=>{
+   const [fg,bg]=colors(e.subject),p=previousFor(e),show=openPrev.has(e.id);
+   return `<div class="row" style="background:${bg}">
+     <div class="rowMain">
+       <div class="subject" style="color:${fg}">●&nbsp; ${esc(e.subject)}</div>
+       <div class="text">${esc(e.text||'')}</div>
+       <button class="prevToggle" onclick="event.stopPropagation();togglePrevious('${e.id}')">${p?'↶':''}</button>
+     </div>
+     ${p?`<div class="prevBox ${show?'show':''}" onclick="goDate('${p.date}')"><div class="prevDate">${pretty(p.date)}</div><div>${esc(p.text||'(boş)')}</div></div>`:''}
+     <div class="editPanel">
+       <div class="editGrid">
+         <select onchange="updateEntry('${e.id}','subject',this.value,true)">${subjectOptions(e.subject)}</select>
+         <textarea oninput="updateEntry('${e.id}','text',this.value,false)">${esc(e.text||'')}</textarea>
+       </div>
+       <div class="editActions">
+         <button class="smallBtn" onclick="toggleRepeat('${e.id}')">Tekrar</button>
+         <button class="smallBtn danger" onclick="deleteEntry('${e.id}')">Sil</button>
+       </div>
+       <div id="repeat-${e.id}" class="repeatSheet">
+         <div class="formRow"><input id="rf-${e.id}" type="date" value="${e.date}"><input id="rt-${e.id}" type="date" value="${e.date}"></div>
+         <div class="checks">
+           ${['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'].map((d,i)=>`<label><input type="checkbox" value="${i}" style="width:auto"> ${d}</label>`).join('')}
+         </div>
+         <button class="smallBtn" style="margin-top:8px" onclick="applyRepeat('${e.id}')">Uygula</button>
+       </div>
+     </div>
+   </div>`
+ }).join('');
 }
-function addEntry(){if(!db.subjects.length){alert('Önce Ayarlar bölümünden bir başlık ekle.');showView('settings');return}
- db.entries.push({id:uid(),date:current,subject:db.subjects[0],text:'',created:new Date().toISOString()});save();renderDay()}
-function updateEntry(id,k,v){let e=db.entries.find(x=>x.id===id);if(e){e[k]=v;save()}}
-function shift(n){let d=parseISO(current);d.setDate(d.getDate()+n);current=iso(d);renderDay()}
-document.getElementById('date').onchange=e=>{current=e.target.value;renderDay()}
 
-function renderSubjects(){
- document.getElementById('subjects').innerHTML=db.subjects.map((s,i)=>`<div class="settingsRow"><input value="${esc(s)}" onchange="renameSubject(${i},this.value)"><button class="danger" onclick="removeSubject(${i})">Sil</button></div>`).join('');
- document.getElementById('searchSubject').innerHTML=subjectOptions('',true)
+function toggleEdit(){editMode=!editMode;renderDay()}
+function addEntry(){
+ if(!db.subjects.length){showView('settings');return}
+ const e={id:uid(),date:current,subject:db.subjects[0],text:'',created:new Date().toISOString()};
+ db.entries.push(e);save();editMode=true;renderDay();
 }
-function addSubject(){let el=document.getElementById('newSubject'),s=el.value.trim();if(s&&!db.subjects.includes(s)){db.subjects.push(s);el.value='';save();renderSubjects();renderDay()}}
-function renameSubject(i,v){v=v.trim();if(!v)return;let old=db.subjects[i];db.subjects[i]=v;db.entries.forEach(e=>{if(e.subject===old)e.subject=v});save();renderSubjects();renderDay()}
-function removeSubject(i){let s=db.subjects[i];if(db.entries.some(e=>e.subject===s)){if(!confirm(`"${s}" başlıklı kayıtlar var. Başlığı yine de sil? Kayıtlar korunur.`))return}db.subjects.splice(i,1);save();renderSubjects();renderDay()}
+function updateEntry(id,k,v,rerender){let e=db.entries.find(x=>x.id===id);if(!e)return;e[k]=v;save();if(rerender)renderDay()}
+function deleteEntry(id){db.entries=db.entries.filter(x=>x.id!==id);save();renderDay();renderCalendar()}
+function shift(n){let d=parseISO(current);d.setDate(d.getDate()+n);current=iso(d);openPrev.clear();renderDay()}
+function togglePrevious(id){if(openPrev.has(id))openPrev.delete(id);else openPrev.add(id);renderDay()}
+function goDate(s){current=s;openPrev.clear();renderDay();showView('today')}
+
+function toggleRepeat(id){document.getElementById('repeat-'+id)?.classList.toggle('show')}
+function applyRepeat(id){
+ const src=db.entries.find(e=>e.id===id),box=document.getElementById('repeat-'+id);
+ const f=document.getElementById('rf-'+id).value,t=document.getElementById('rt-'+id).value;
+ const wd=[...box.querySelectorAll('input[type=checkbox]:checked')].map(x=>+x.value);
+ if(!src||!f||!t||f>t||!wd.length){alert('Tarih aralığı ve en az bir gün seç.');return}
+ const series=uid();let d=parseISO(f),end=parseISO(t),count=0;
+ while(d<=end){let idx=(d.getDay()+6)%7,s=iso(d);if(wd.includes(idx)){db.entries.push({id:uid(),date:s,subject:src.subject,text:src.text,created:new Date().toISOString(),series});count++}d.setDate(d.getDate()+1)}
+ save();box.classList.remove('show');renderCalendar();alert(count+' kayıt oluşturuldu.');
+}
 
 function renderCalendar(){
- let y=calCursor.getFullYear(),m=calCursor.getMonth();document.getElementById('calTitle').textContent=new Intl.DateTimeFormat('tr-TR',{month:'long',year:'numeric'}).format(calCursor);
- let names=['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'];let html=names.map(x=>`<div class="dow">${x}</div>`).join('');
- let first=new Date(y,m,1),offset=(first.getDay()+6)%7,days=new Date(y,m+1,0).getDate();
+ const y=calCursor.getFullYear(),m=calCursor.getMonth();
+ document.getElementById('calTitle').textContent=new Intl.DateTimeFormat('tr-TR',{month:'long',year:'numeric'}).format(calCursor);
+ const names=['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'];let html=names.map(x=>`<div class="dow">${x}</div>`).join('');
+ const first=new Date(y,m,1),offset=(first.getDay()+6)%7,days=new Date(y,m+1,0).getDate();
  for(let i=0;i<offset;i++)html+='<button class="day blank"></button>';
- for(let d=1;d<=days;d++){let s=iso(new Date(y,m,d)),has=db.entries.some(e=>e.date===s);html+=`<button class="day ${s===todayISO()?'today':''}" onclick="goDate('${s}')">${d}${has?'<span class="dot"></span>':''}</button>`}
+ for(let d=1;d<=days;d++){
+   const s=iso(new Date(y,m,d));
+   const subjects=[...new Set(db.entries.filter(e=>e.date===s).map(e=>e.subject))];
+   const dots=subjects.slice(0,7).map(sub=>`<span class="dot" style="background:${colors(sub)[0]}"></span>`).join('');
+   html+=`<button class="day ${s===todayISO()?'today':''}" onclick="goDate('${s}')">${d}<div class="dots">${dots}</div></button>`
+ }
  document.getElementById('calendarGrid').innerHTML=html
 }
 function calShift(n){calCursor=new Date(calCursor.getFullYear(),calCursor.getMonth()+n,1);renderCalendar()}
-function goDate(s){current=s;renderDay();showView('today')}
+
+function renderSubjects(){
+ document.getElementById('subjects').innerHTML=db.subjects.map((s,i)=>{
+   const [fg,bg]=colors(s);
+   return `<div class="settingsRow" style="background:${bg};padding:6px;border-radius:10px"><input value="${esc(s)}" onchange="renameSubject(${i},this.value)" style="color:${fg};font-weight:700"><button class="smallBtn danger" onclick="removeSubject(${i})">Sil</button></div>`
+ }).join('');
+ document.getElementById('searchSubject').innerHTML=subjectOptions('',true)
+}
+function addSubject(){let el=document.getElementById('newSubject'),s=el.value.trim();if(s&&!db.subjects.includes(s)){db.subjects.push(s);el.value='';save();renderSubjects();renderDay();renderCalendar()}}
+function renameSubject(i,v){v=v.trim();if(!v)return;let old=db.subjects[i];db.subjects[i]=v;db.entries.forEach(e=>{if(e.subject===old)e.subject=v});save();renderSubjects();renderDay();renderCalendar()}
+function removeSubject(i){let s=db.subjects[i];if(db.entries.some(e=>e.subject===s)&&!confirm('"'+s+'" başlıklı kayıtlar var. Başlığı yine de sil?'))return;db.subjects.splice(i,1);save();renderSubjects();renderDay();renderCalendar()}
 
 function runSearch(){
  let sub=document.getElementById('searchSubject').value,q=document.getElementById('searchText').value.toLocaleLowerCase('tr-TR'),f=document.getElementById('searchFrom').value,t=document.getElementById('searchTo').value;
  let a=db.entries.filter(e=>(!sub||e.subject===sub)&&(!q||e.text.toLocaleLowerCase('tr-TR').includes(q))&&(!f||e.date>=f)&&(!t||e.date<=t)).sort((a,b)=>a.date.localeCompare(b.date));
- document.getElementById('results').innerHTML=a.length?a.map(e=>`<div class="result" onclick="goDate('${e.date}')"><b>${pretty(e.date)} · ${esc(e.subject)}</b>${esc(e.text)||'<span class="muted">(boş)</span>'}</div>`).join(''):'<p class="muted">Kayıt bulunamadı.</p>'
+ document.getElementById('results').innerHTML=a.length?a.map(e=>{let [fg,bg]=colors(e.subject);return `<div class="result" onclick="goDate('${e.date}')" style="background:${bg};padding:10px;border-radius:9px;margin-top:6px"><b style="color:${fg}">${pretty(e.date)} · ${esc(e.subject)}</b><div>${esc(e.text||'(boş)')}</div></div>`}).join(''):'<p class="muted">Kayıt bulunamadı.</p>'
 }
 
-const days=['Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi','Pazar'];
-document.getElementById('weekdayChecks').innerHTML=days.map((x,i)=>`<label><input type="checkbox" value="${i}" style="width:auto"> ${x}</label>`).join('');
-function openRepeat(id){repeatId=id;document.getElementById('repFrom').value=current;document.getElementById('repTo').value=current;document.querySelectorAll('#weekdayChecks input').forEach(x=>x.checked=false);document.getElementById('repeatModal').classList.add('show')}
-function closeRepeat(){document.getElementById('repeatModal').classList.remove('show');repeatId=null}
-function applyRepeat(){
- let src=db.entries.find(e=>e.id===repeatId),f=document.getElementById('repFrom').value,t=document.getElementById('repTo').value,wd=[...document.querySelectorAll('#weekdayChecks input:checked')].map(x=>+x.value);
- if(!src||!f||!t||f>t||!wd.length){alert('Tarih aralığı ve en az bir gün seç.');return}
- let series=uid(),d=parseISO(f),end=parseISO(t),count=0;
- while(d<=end){let mondayIndex=(d.getDay()+6)%7,s=iso(d);if(wd.includes(mondayIndex)){db.entries.push({id:uid(),date:s,subject:src.subject,text:src.text,created:new Date().toISOString(),series});count++}d.setDate(d.getDate()+1)}
- save();closeRepeat();renderDay();alert(`${count} kayıt oluşturuldu.`)
-}
-function openDelete(id){
- deleteId=id;let e=db.entries.find(x=>x.id===id),box=document.getElementById('deleteChoices');
- box.innerHTML=e&&e.series?`<div class="actions" style="display:grid"><button onclick="doDelete('one')">Sadece bu kayıt</button><button onclick="doDelete('future')">Bu ve bundan sonrakiler</button><button class="danger" onclick="doDelete('series')">Tüm tekrar serisi</button></div>`:`<button class="danger add" onclick="doDelete('one')">Bu kaydı sil</button>`;
- document.getElementById('deleteModal').classList.add('show')
-}
-function closeDelete(){document.getElementById('deleteModal').classList.remove('show');deleteId=null}
-function doDelete(mode){
- let e=db.entries.find(x=>x.id===deleteId);if(!e)return;
- if(mode==='one')db.entries=db.entries.filter(x=>x.id!==e.id);
- else if(mode==='series')db.entries=db.entries.filter(x=>x.series!==e.series);
- else db.entries=db.entries.filter(x=>!(x.series===e.series&&x.date>=e.date));
- save();closeDelete();renderDay();renderCalendar()
-}
 function exportData(){let blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`agenda-yedek-${todayISO()}.json`;a.click();URL.revokeObjectURL(a.href)}
 document.getElementById('importFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let x=JSON.parse(await f.text());if(!Array.isArray(x.subjects)||!Array.isArray(x.entries))throw 0;db=x;save();renderAll();alert('Yedek yüklendi.')}catch{alert('Geçerli bir Agenda yedeği değil.')}e.target.value=''}
 
-function showView(v){document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.id===v));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.view===v));if(v==='calendar')renderCalendar();if(v==='settings')renderSubjects();if(v==='search')renderSubjects()}
-document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>showView(b.dataset.view))
-
 function updateAuthUI(user){
  currentUser=user||null;
- const st=document.getElementById('authStatus'),btn=document.getElementById('authButton');
- const ie=document.getElementById('infoEmail'),iu=document.getElementById('infoUid');
- if(user){
-   st.textContent=user.email||'Google hesabı'; btn.textContent='Çıkış yap';
-   ie.textContent=user.email||''; iu.textContent=user.uid;
- }else{
-   st.textContent='Giriş yapılmadı'; btn.textContent='Google ile giriş';
-   ie.textContent='Henüz giriş yapılmadı'; iu.textContent='Giriş yaptıktan sonra burada görünecek.';
- }
+ const st=document.getElementById('authStatus'),btn=document.getElementById('authButton'),ie=document.getElementById('infoEmail'),iu=document.getElementById('infoUid');
+ if(user){st.textContent=user.email||'Google hesabı';btn.textContent='Çıkış yap';ie.textContent=user.email||'';iu.textContent=user.uid}
+ else{st.textContent='Giriş yapılmadı';btn.textContent='Google ile giriş';ie.textContent='Henüz giriş yapılmadı';iu.textContent='Giriş yaptıktan sonra burada görünecek.'}
 }
-async function authAction(){
- try{
-   if(currentUser){await auth.signOut();return}
-   const provider=new firebase.auth.GoogleAuthProvider();
-   await auth.signInWithRedirect(provider);
- }catch(e){alert('Giriş hatası: '+e.message)}
-}
-async function copyUid(){
- if(!currentUser){alert('Önce Google ile giriş yap.');return}
- try{await navigator.clipboard.writeText(currentUser.uid);alert('UID kopyalandı.')}
- catch(e){prompt('UID:',currentUser.uid)}
-}
+async function authAction(){try{if(currentUser){await auth.signOut();return}const provider=new firebase.auth.GoogleAuthProvider();await auth.signInWithRedirect(provider)}catch(e){alert('Giriş hatası: '+e.message)}}
+async function copyUid(){if(!currentUser){alert('Önce Google ile giriş yap.');return}try{await navigator.clipboard.writeText(currentUser.uid);alert('UID kopyalandı.')}catch(e){prompt('UID:',currentUser.uid)}}
 auth.getRedirectResult().catch(e=>alert('Google giriş hatası: '+e.message));
 auth.onAuthStateChanged(user=>updateAuthUI(user));
 
+function showView(v){
+ document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.id===v));
+ document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.view===v));
+ if(v==='calendar')renderCalendar();
+ if(v==='settings'||v==='search')renderSubjects();
+}
+document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>showView(b.dataset.view));
 function renderAll(){renderSubjects();renderDay();renderCalendar()}
 renderAll();
 if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'));
-</script></body></html>
+</script>
+</body>
+</html>
