@@ -117,7 +117,7 @@ h1{font-size:24px;margin:6px 0 14px}h2{font-size:18px;margin:18px 0 8px}
 
 <section id="info" class="view">
   <h1>Bilgi</h1>
-  <div class="card"><b>Uygulama</b><div>Agenda PWA · v10</div></div>
+  <div class="card"><b>Uygulama</b><div>Agenda PWA · v11</div></div>
   <div class="card"><b>Kod / Hosting</b><div>GitHub Pages · 25shpy/Agenda</div></div>
   <div class="card"><b>Veritabanı</b><div>Google Firebase · Cloud Firestore</div></div>
   <div class="card"><b>Firebase Project</b><div>agenda-faf9b</div></div>
@@ -147,9 +147,25 @@ const firebaseConfig={
   messagingSenderId:"1013124260211",
   appId:"1:1013124260211:web:ee7543a223e6f6b4a6a506"
 };
-firebase.initializeApp(firebaseConfig);
-const auth=firebase.auth(),firestore=firebase.firestore();
+let auth=null,firestore=null;
 let currentUser=null,cloudReady=false,cloudApplying=false,cloudTimer=null,cloudUnsub=null;
+
+function initFirebaseSafe(){
+ try{
+   if(typeof firebase==='undefined'){
+     console.warn('Firebase SDK yüklenmedi; Agenda yerel modda çalışıyor.');
+     setTimeout(initFirebaseSafe,1200);
+     return;
+   }
+   if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+   auth=firebase.auth();
+   firestore=firebase.firestore();
+   setupAuth();
+ }catch(e){
+   console.error('Firebase init error',e);
+   setCloudStatus('Firebase yüklenemedi · yerel mod','clouderr');
+ }
+}
 
 const K='agenda-v2'; // eski veriyi korumak için aynı anahtar
 const palette=[
@@ -165,7 +181,10 @@ function save(){
  if(currentUser&&cloudReady&&!cloudApplying)scheduleCloudSave();
 }
 function saveLocalOnly(){localStorage.setItem(K,JSON.stringify(db))}
-function cloudDoc(){return firestore.collection('users').doc(currentUser.uid).collection('agenda').doc('state')}
+function cloudDoc(){
+ if(!firestore||!currentUser) throw new Error('Firebase hazır değil');
+ return firestore.collection('users').doc(currentUser.uid).collection('agenda').doc('state');
+}
 function setCloudStatus(text,cls='muted'){const el=document.getElementById('cloudStatus');if(el){el.className=cls;el.textContent=text}}
 function scheduleCloudSave(){
  clearTimeout(cloudTimer);
@@ -370,6 +389,10 @@ function updateAuthUI(user){
 
 async function authAction(){
  try{
+   if(!auth){
+     alert('Firebase henüz hazır değil. Birkaç saniye sonra tekrar dene.');
+     return;
+   }
    if(currentUser){
      await auth.signOut();
      return;
@@ -378,7 +401,7 @@ async function authAction(){
    const provider=new firebase.auth.GoogleAuthProvider();
    provider.setCustomParameters({prompt:'select_account'});
    const result=await auth.signInWithPopup(provider);
-   if(result && result.user){
+   if(result&&result.user){
      updateAuthUI(result.user);
      await startCloud(result.user);
    }
@@ -401,16 +424,18 @@ async function copyUid(){
  }
 }
 
-auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(e=>console.error('Persistence error',e));
-
-auth.onAuthStateChanged(async user=>{
- updateAuthUI(user);
- if(user){
-   await startCloud(user);
- }else{
-   stopCloud();
- }
-});
+let authSetupDone=false;
+function setupAuth(){
+ if(authSetupDone||!auth)return;
+ authSetupDone=true;
+ auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(e=>console.error('Persistence error',e));
+ auth.onAuthStateChanged(async user=>{
+   updateAuthUI(user);
+   if(user) await startCloud(user);
+   else stopCloud();
+ });
+ setCloudStatus('Firebase hazır · giriş bekleniyor','muted');
+}
 
 function showView(v){
  document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.id===v));
@@ -421,6 +446,7 @@ function showView(v){
 
 function renderAll(){renderSubjects();renderDay();renderCalendar()}
 renderAll();
+setTimeout(initFirebaseSafe,0);
 if('serviceWorker' in navigator){
  window.addEventListener('load',async()=>{
    try{
