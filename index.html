@@ -58,7 +58,7 @@ textarea{min-height:64px;resize:vertical}
 .card{border:1px solid var(--line);border-radius:12px;padding:11px;margin:8px 0}
 .result{padding:10px 2px;border-bottom:1px solid var(--line)}
 .authline{display:flex;align-items:center;gap:10px}.authline button{margin-left:auto}
-.muted{color:var(--muted);font-size:13px}.cloudok{color:#177245}.clouderr{color:#b42318}.cloudsync{color:#9a6700}
+.muted{color:var(--muted);font-size:13px}.diag{margin-top:10px;padding:10px;border:1px dashed #ccc;border-radius:10px;background:#fafafa;font-size:12px;line-height:1.45;white-space:pre-wrap}.diag b{font-weight:700}.cloudok{color:#177245}.clouderr{color:#b42318}.cloudsync{color:#9a6700}
 h1{font-size:24px;margin:6px 0 14px}h2{font-size:18px;margin:18px 0 8px}
 .settingsRow{display:flex;gap:7px;margin:7px 0}.settingsRow input{flex:1}
 .repeatSheet{display:none;margin-top:8px;padding:10px;border:1px dashed #ccc;border-radius:10px;background:rgba(255,255,255,.6)}
@@ -106,6 +106,7 @@ h1{font-size:24px;margin:6px 0 14px}h2{font-size:18px;margin:18px 0 8px}
   <h1>Ayarlar</h1>
   <div class="card">
     <div class="authline"><div><b>Google hesabı</b><div id="authStatus" class="muted">Giriş yapılmadı</div></div><button id="authButton" class="smallBtn" onclick="authAction()">Google ile giriş</button></div>
+    <div id="authDiag" class="diag">Auth hazır.</div>
   </div>
   <h2>Başlıklar</h2>
   <div id="subjects"></div>
@@ -117,7 +118,7 @@ h1{font-size:24px;margin:6px 0 14px}h2{font-size:18px;margin:18px 0 8px}
 
 <section id="info" class="view">
   <h1>Bilgi</h1>
-  <div class="card"><b>Uygulama</b><div>Agenda PWA · v7</div></div>
+  <div class="card"><b>Uygulama</b><div>Agenda PWA · v8</div></div>
   <div class="card"><b>Kod / Hosting</b><div>GitHub Pages · 25shpy/Agenda</div></div>
   <div class="card"><b>Veritabanı</b><div>Google Firebase · Cloud Firestore</div></div>
   <div class="card"><b>Firebase Project</b><div>agenda-faf9b</div></div>
@@ -356,25 +357,66 @@ function updateAuthUI(user){
  else{st.textContent='Giriş yapılmadı';btn.textContent='Google ile giriş';ie.textContent='Henüz giriş yapılmadı';iu.textContent='Giriş yaptıktan sonra burada görünecek.'}
 }
 async function authAction(){
+ const diag=document.getElementById('authDiag');
+ const log=(m)=>{diag.textContent=m;console.log('[AUTH]',m)};
  try{
-   if(currentUser){await auth.signOut();return}
+   if(currentUser){
+     log('Çıkış yapılıyor…');
+     await auth.signOut();
+     log('Çıkış tamamlandı.');
+     return;
+   }
+
+   log('1/5 Auth persistence ayarlanıyor…');
+   await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
+   log('2/5 Google provider hazırlanıyor…');
    const provider=new firebase.auth.GoogleAuthProvider();
    provider.setCustomParameters({prompt:'select_account'});
+
+   log('3/5 Popup açılıyor…');
    const result=await auth.signInWithPopup(provider);
+
+   log('4/5 Popup sonucu geldi.
+Email: '+(result.user?.email||'-')+'
+UID: '+(result.user?.uid||'-'));
+
    if(result && result.user){
      updateAuthUI(result.user);
+     log('5/5 Auth tamamlandı. Firestore bağlantısı başlatılıyor…
+Email: '+(result.user.email||'-')+'
+UID: '+result.user.uid);
      await startCloud(result.user);
    }
  }catch(e){
    console.error(e);
-   alert('Google giriş hatası: '+e.message);
+   diag.textContent='HATA
+Kod: '+(e.code||'-')+'
+Mesaj: '+(e.message||String(e));
+   alert('Google giriş hatası: '+(e.code||'')+' '+(e.message||e));
  }
 }
 async function copyUid(){if(!currentUser){alert('Önce Google ile giriş yap.');return}try{await navigator.clipboard.writeText(currentUser.uid);alert('UID kopyalandı.')}catch(e){prompt('UID:',currentUser.uid)}}
+(async()=>{
+ const diag=document.getElementById('authDiag');
+ try{
+   diag.textContent='Başlangıç: persistence kontrol ediliyor…';
+   await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+   diag.textContent='Başlangıç: Auth hazır. Kullanıcı durumu bekleniyor…';
+ }catch(e){
+   diag.textContent='Persistence hatası\nKod: '+(e.code||'-')+'\nMesaj: '+(e.message||String(e));
+ }
+})();
 auth.onAuthStateChanged(async user=>{
  updateAuthUI(user);
- if(user) await startCloud(user);
- else stopCloud();
+ const diag=document.getElementById('authDiag');
+ if(user){
+   diag.textContent='Auth state: GİRİŞ YAPILDI\nEmail: '+(user.email||'-')+'\nUID: '+user.uid;
+   await startCloud(user);
+ }else{
+   diag.textContent='Auth state: GİRİŞ YAPILMADI';
+   stopCloud();
+ }
 });
 
 function showView(v){
