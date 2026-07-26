@@ -129,7 +129,7 @@ h1{font-size:24px;margin:6px 0 14px}h2{font-size:18px;margin:18px 0 8px}
 
 <section id="info" class="view">
   <h1>Bilgi</h1>
-  <div class="card"><b>Uygulama</b><div>Agenda PWA · v17</div></div>
+  <div class="card"><b>Uygulama</b><div>Agenda PWA · v18</div></div>
   <div class="card"><b>Kod / Hosting</b><div>GitHub Pages · 25shpy/Agenda</div></div>
   <div class="card"><b>Veritabanı</b><div>Google Firebase · Cloud Firestore</div></div>
   <div class="card"><b>Firebase Project</b><div>agenda-faf9b</div></div>
@@ -398,7 +398,7 @@ function swipeMove(ev,id){
  if(!el)return;
 
  const x=Math.max(-150,Math.min(0,touchState.base+dx));
- el.style.transform=`translateX(${x}px)`;
+ el.style.setProperty('transform',`translateX(${x}px)`,'important');
 }
 
 function swipeEnd(ev,id){
@@ -410,7 +410,7 @@ function swipeEnd(ev,id){
  if(el){
    try{el.releasePointerCapture(ev.pointerId)}catch(_){}
    el.classList.remove('dragging');
-   el.style.transform='';
+   el.style.removeProperty('transform');
  }
 
  if(state.horizontal){
@@ -428,7 +428,7 @@ function swipeCancel(ev,id){
  const el=document.querySelector(`[data-swipe-id="${id}"]`);
  if(el){
    el.classList.remove('dragging');
-   el.style.transform='';
+   el.style.removeProperty('transform');
  }
  touchState=null;
  renderDay();
@@ -610,3 +610,27 @@ if('serviceWorker' in navigator){
 </script>
 </body>
 </html>
+<style>
+.row { position:relative !important; overflow:hidden !important; }
+.swipeShell { position:relative !important; overflow:hidden !important; width:100% !important; }
+.swipeActions {
+  position:absolute !important; right:0 !important; top:0 !important; bottom:0 !important;
+  width:150px !important; display:grid !important; grid-template-columns:75px 75px !important;
+  z-index:1 !important;
+}
+.swipeContent {
+  position:relative !important; z-index:5 !important; width:100% !important;
+  background:inherit !important; transform:translateX(0);
+  transition:transform .18s ease !important; touch-action:pan-y !important;
+}
+.swipeContent.swiped { transform:translateX(-150px) !important; }
+.swipeContent.dragging { transition:none !important; }
+.rowMain {
+  width:100% !important; box-sizing:border-box !important;
+  display:grid !important; grid-template-columns:150px minmax(0,1fr) 36px !important;
+  background:inherit !important;
+}
+@media(max-width:430px){
+ .rowMain{grid-template-columns:112px minmax(0,1fr) 32px !important;}
+}
+</style>
