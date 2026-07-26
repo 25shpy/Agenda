@@ -129,7 +129,7 @@ h1{font-size:24px;margin:6px 0 14px}h2{font-size:18px;margin:18px 0 8px}
 
 <section id="info" class="view">
   <h1>Bilgi</h1>
-  <div class="card"><b>Uygulama</b><div>Agenda PWA · v21</div></div>
+  <div class="card"><b>Uygulama</b><div>Agenda PWA · v22</div></div>
   <div class="card"><b>Kod / Hosting</b><div>GitHub Pages · 25shpy/Agenda</div></div>
   <div class="card"><b>Veritabanı</b><div>Google Firebase · Cloud Firestore</div></div>
   <div class="card"><b>Firebase Project</b><div>agenda-faf9b</div></div>
@@ -499,19 +499,27 @@ function closeRepeat(id){
 }
 
 function addEntry(){
- if(!db.subjects.length){showView('settings');return}
- const e={id:uid(),date:current,subject:db.subjects[0],text:'',created:new Date().toISOString()};
+ if(!db.subjects.length){
+   showView('settings');
+   return;
+ }
+ const e={
+   id:uid(),
+   date:current,
+   subject:db.subjects[0],
+   text:'',
+   created:new Date().toISOString()
+ };
  db.entries.push(e);
  save();
+
+ // Yeni satır her zaman kapalı/tek satır başlasın.
  swipedId=null;
  repeatOpenId=null;
- openEdit.add(e.id);
+ openEdit.delete(e.id);
+ openPrev.delete(e.id);
+
  renderDay();
- setTimeout(()=>{
-   const row=document.querySelector(`.row[data-id="${e.id}"]`);
-   const ta=row?.querySelector('textarea');
-   if(ta) ta.focus();
- },50);
 }
 function updateEntry(id,k,v,rerender){
  let e=db.entries.find(x=>x.id===id);
