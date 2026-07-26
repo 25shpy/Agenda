@@ -129,7 +129,7 @@ h1{font-size:24px;margin:6px 0 14px}h2{font-size:18px;margin:18px 0 8px}
 
 <section id="info" class="view">
   <h1>Bilgi</h1>
-  <div class="card"><b>Uygulama</b><div>Agenda PWA · v19</div></div>
+  <div class="card"><b>Uygulama</b><div>Agenda PWA · v20</div></div>
   <div class="card"><b>Kod / Hosting</b><div>GitHub Pages · 25shpy/Agenda</div></div>
   <div class="card"><b>Veritabanı</b><div>Google Firebase · Cloud Firestore</div></div>
   <div class="card"><b>Firebase Project</b><div>agenda-faf9b</div></div>
@@ -195,7 +195,7 @@ const palette=[
   ['#6a3dc5','#f5f0ff'],['#c62828','#fff0f0'],['#00838f','#eefafa'],
   ['#ef6c00','#fff3ea'],['#5d4037','#f7f1ef'],['#455a64','#f1f4f5']
 ];
-let db=load(),current=todayISO(),calCursor=new Date(),openPrev=new Set(),openEdit=new Set(),swipedId=null,touchState=null;
+let db=load(),current=todayISO(),calCursor=new Date(),openPrev=new Set(),openEdit=new Set(),swipedId=null,touchState=null,repeatOpenId=null;
 
 function load(){try{return JSON.parse(localStorage.getItem(K))||{subjects:['Matematik','Fizik','Kimya'],entries:[]}}catch(e){return{subjects:['Matematik','Fizik','Kimya'],entries:[]}}}
 function save(){
@@ -306,7 +306,8 @@ function renderDay(){
          p=previousFor(e),
          showPrev=openPrev.has(e.id),
          expanded=openEdit.has(e.id),
-         swiped=swipedId===e.id;
+         swiped=swipedId===e.id,
+         repeatOpen=repeatOpenId===e.id;
 
    return `<div class="row ${expanded?'expanded':''}" style="--row-bg:${bg};background:${bg}" data-id="${e.id}">
      <div class="swipeShell">
@@ -333,33 +334,66 @@ function renderDay(){
            <div>${esc(p.text||'(boş)')}</div>
          </div>`:''}
 
-         <div class="editPanel">
+         <div class="editPanel" onclick="event.stopPropagation()">
            <div class="editGrid">
-             <select onchange="updateEntry('${e.id}','subject',this.value,true)">${subjectOptions(e.subject)}</select>
-             <textarea oninput="updateEntry('${e.id}','text',this.value,false)">${esc(e.text||'')}</textarea>
+             <select onchange="updateEntry('${e.id}','subject',this.value,true)">
+               ${subjectOptions(e.subject)}
+             </select>
+             <textarea placeholder="Açıklama..." oninput="updateEntry('${e.id}','text',this.value,false)">${esc(e.text||'')}</textarea>
            </div>
+
+           ${repeatOpen?`
+             <div id="repeat-${e.id}" class="repeatSheet show">
+               <div class="formRow">
+                 <input id="rf-${e.id}" type="date" value="${e.date}">
+                 <input id="rt-${e.id}" type="date" value="${e.date}">
+               </div>
+               <div class="checks">
+                 ${['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'].map((d,i)=>`<label><input type="checkbox" value="${i}" style="width:auto"> ${d}</label>`).join('')}
+               </div>
+               <div class="editActions">
+                 <button class="smallBtn" onclick="closeRepeat('${e.id}')">Vazgeç</button>
+                 <button class="smallBtn" onclick="applyRepeat('${e.id}')">Uygula</button>
+               </div>
+             </div>`:''}
          </div>
        </div>
      </div>
    </div>`
  }).join('');
 }
-
 function rowTap(ev,id){
  if(touchState && touchState.moved) return;
+
  if(swipedId){
-   if(swipedId===id){swipedId=null;renderDay();return}
+   if(swipedId===id){
+     swipedId=null;
+     renderDay();
+     return;
+   }
    swipedId=null;
  }
- if(openEdit.has(id)) openEdit.delete(id);
- else openEdit.add(id);
+
+ if(openEdit.has(id)){
+   openEdit.delete(id);
+   if(repeatOpenId===id) repeatOpenId=null;
+ }else{
+   openEdit.add(id);
+ }
  renderDay();
 }
 
+function isInteractiveTarget(target){
+ return !!target.closest('select,textarea,input,button,.editPanel,.repeatSheet');
+}
+
 function swipeStart(ev,id){
+ if(isInteractiveTarget(ev.target)) return;
  if(ev.pointerType==='mouse' && ev.button!==0) return;
+
  const el=document.querySelector(`[data-swipe-id="${id}"]`);
  if(!el)return;
+
  try{el.setPointerCapture(ev.pointerId)}catch(_){}
  touchState={
    id,
@@ -381,14 +415,10 @@ function swipeMove(ev,id){
  const dy=ev.clientY-touchState.startY;
 
  if(!touchState.horizontal){
-   if(Math.abs(dx)<7 && Math.abs(dy)<7)return;
-   if(Math.abs(dy)>Math.abs(dx)){
-     return;
-   }
+   if(Math.abs(dx)<6 && Math.abs(dy)<6)return;
+   if(Math.abs(dy)>Math.abs(dx))return;
    touchState.horizontal=true;
  }
-
- if(!touchState.horizontal)return;
 
  ev.preventDefault();
  touchState.dx=dx;
@@ -415,13 +445,13 @@ function swipeEnd(ev,id){
 
  if(state.horizontal){
    const finalX=state.base+state.dx;
-   if(finalX < -65) swipedId=id;
-   else if(finalX > -85) swipedId=null;
+   if(finalX < -55) swipedId=id;
+   else if(finalX > -95) swipedId=null;
  }
- touchState={moved:state.moved};
 
+ touchState={moved:state.moved};
  renderDay();
- setTimeout(()=>{touchState=null},80);
+ setTimeout(()=>{touchState=null},40);
 }
 
 function swipeCancel(ev,id){
@@ -436,47 +466,81 @@ function swipeCancel(ev,id){
 
 function openRepeatSwipe(id){
  swipedId=null;
+ repeatOpenId=id;
  openEdit.add(id);
  renderDay();
- setTimeout(()=>{
-   const row=document.querySelector(`.row[data-id="${id}"]`);
-   if(!row)return;
-   const panel=row.querySelector('.editPanel');
-   if(!panel)return;
-   let old=panel.querySelector('.repeatSheet');
-   if(old) old.remove();
-   const e=db.entries.find(x=>x.id===id);
-   const box=document.createElement('div');
-   box.className='repeatSheet show';
-   box.id='repeat-'+id;
-   box.innerHTML=`
-     <div class="formRow"><input id="rf-${id}" type="date" value="${e.date}"><input id="rt-${id}" type="date" value="${e.date}"></div>
-     <div class="checks">${['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'].map((d,i)=>`<label><input type="checkbox" value="${i}" style="width:auto"> ${d}</label>`).join('')}</div>
-     <button class="smallBtn" style="margin-top:8px" onclick="applyRepeat('${id}')">Uygula</button>`;
-   panel.appendChild(box);
-   box.scrollIntoView({behavior:'smooth',block:'nearest'});
- },0);
+}
+
+function closeRepeat(id){
+ if(repeatOpenId===id) repeatOpenId=null;
+ openEdit.delete(id);
+ swipedId=null;
+ renderDay();
 }
 
 function addEntry(){
  if(!db.subjects.length){showView('settings');return}
  const e={id:uid(),date:current,subject:db.subjects[0],text:'',created:new Date().toISOString()};
- db.entries.push(e);save();openEdit.add(e.id);renderDay();
+ db.entries.push(e);
+ save();
+ swipedId=null;
+ repeatOpenId=null;
+ openEdit.add(e.id);
+ renderDay();
+ setTimeout(()=>{
+   const row=document.querySelector(`.row[data-id="${e.id}"]`);
+   const ta=row?.querySelector('textarea');
+   if(ta) ta.focus();
+ },50);
 }
-function updateEntry(id,k,v,rerender){let e=db.entries.find(x=>x.id===id);if(!e)return;e[k]=v;save();if(rerender)renderDay()}
-function deleteEntry(id){db.entries=db.entries.filter(x=>x.id!==id);openEdit.delete(id);openPrev.delete(id);if(swipedId===id)swipedId=null;save();renderDay();renderCalendar()}
-function shift(n){let d=parseISO(current);d.setDate(d.getDate()+n);current=iso(d);openPrev.clear();openEdit.clear();swipedId=null;renderDay()}
+function updateEntry(id,k,v,rerender){
+ let e=db.entries.find(x=>x.id===id);
+ if(!e)return;
+ e[k]=v;
+ save();
+ if(rerender)setTimeout(()=>renderDay(),0);
+}
+function deleteEntry(id){db.entries=db.entries.filter(x=>x.id!==id);openEdit.delete(id);openPrev.delete(id);if(swipedId===id)swipedId=null;if(repeatOpenId===id)repeatOpenId=null;save();renderDay();renderCalendar()}
+function shift(n){let d=parseISO(current);d.setDate(d.getDate()+n);current=iso(d);openPrev.clear();openEdit.clear();swipedId=null;repeatOpenId=null;renderDay()}
 function togglePrevious(id){if(openPrev.has(id))openPrev.delete(id);else openPrev.add(id);renderDay()}
-function goDate(s){current=s;openPrev.clear();openEdit.clear();swipedId=null;renderDay();showView('today')}
+function goDate(s){current=s;openPrev.clear();openEdit.clear();swipedId=null;repeatOpenId=null;renderDay();showView('today')}
 
 function applyRepeat(id){
- const src=db.entries.find(e=>e.id===id),box=document.getElementById('repeat-'+id);
- const f=document.getElementById('rf-'+id).value,t=document.getElementById('rt-'+id).value;
- const wd=[...box.querySelectorAll('input[type=checkbox]:checked')].map(x=>+x.value);
- if(!src||!f||!t||f>t||!wd.length){alert('Tarih aralığı ve en az bir gün seç.');return}
- const series=uid();let d=parseISO(f),end=parseISO(t),count=0;
- while(d<=end){let idx=(d.getDay()+6)%7,s=iso(d);if(wd.includes(idx)){db.entries.push({id:uid(),date:s,subject:src.subject,text:src.text,created:new Date().toISOString(),series});count++}d.setDate(d.getDate()+1)}
- save();box.classList.remove('show');renderCalendar();alert(count+' kayıt oluşturuldu.');
+ const src=db.entries.find(e=>e.id===id),
+       box=document.getElementById('repeat-'+id);
+ if(!src||!box)return;
+
+ const f=document.getElementById('rf-'+id).value,
+       t=document.getElementById('rt-'+id).value,
+       wd=[...box.querySelectorAll('input[type=checkbox]:checked')].map(x=>+x.value);
+
+ if(!f||!t||f>t||!wd.length){
+   alert('Tarih aralığı ve en az bir gün seç.');
+   return;
+ }
+
+ const series=uid();
+ let d=parseISO(f),end=parseISO(t),count=0;
+
+ while(d<=end){
+   const idx=(d.getDay()+6)%7,s=iso(d);
+   if(wd.includes(idx)){
+     db.entries.push({
+       id:uid(),date:s,subject:src.subject,text:src.text,
+       created:new Date().toISOString(),series
+     });
+     count++;
+   }
+   d.setDate(d.getDate()+1);
+ }
+
+ repeatOpenId=null;
+ openEdit.delete(id);
+ swipedId=null;
+ save();
+ renderDay();
+ renderCalendar();
+ alert(count+' kayıt oluşturuldu.');
 }
 
 function renderCalendar(){
@@ -680,4 +744,20 @@ if('serviceWorker' in navigator){
 .swipeContent.dragging{
   transition:none !important;
 }
+</style>
+
+<style>
+.swipeContent{transition:transform .11s ease !important;}
+.swipeActions button{
+  touch-action:manipulation !important;
+  -webkit-tap-highlight-color:transparent !important;
+  cursor:pointer;
+}
+.editPanel select,.editPanel textarea,.editPanel input,.editPanel button{
+  touch-action:manipulation !important;
+  user-select:auto !important;
+  -webkit-user-select:auto !important;
+}
+.editPanel{background:var(--row-bg) !important;}
+.repeatSheet{background:rgba(255,255,255,.72) !important;}
 </style>
