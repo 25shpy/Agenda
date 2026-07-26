@@ -24,7 +24,17 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,B
 .dateTitle{text-align:center;font-weight:700;font-size:21px}
 .editOn{background:#f1f1f1}
 .list{display:flex;flex-direction:column;gap:7px}
-.row{border-radius:12px;padding:0;overflow:hidden;box-shadow:var(--shadow)}
+.row{border-radius:12px;padding:0;overflow:hidden;box-shadow:var(--shadow);position:relative}
+.swipeShell{position:relative;overflow:hidden;border-radius:12px}
+.swipeActions{position:absolute;right:0;top:0;bottom:0;width:150px;display:grid;grid-template-columns:1fr 1fr;z-index:1}
+.swipeActions button{border:0;color:#fff;font-weight:700;font-size:13px}
+.swipeRepeat{background:#666}
+.swipeDelete{background:#c62828}
+.swipeContent{position:relative;z-index:2;transition:transform .2s ease;background:inherit;touch-action:pan-y}
+.swipeContent.swiped{transform:translateX(-150px)}
+.swipeContent.dragging{transition:none}
+.row.expanded .editPanel{display:block}
+.row.expanded .prevBox.show{display:block}
 .rowMain{min-height:58px;display:grid;grid-template-columns:150px 1fr 36px;gap:8px;align-items:center;padding:10px 12px;cursor:pointer}
 .subject{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -33,8 +43,6 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,B
 .prevBox.show{display:block}
 .prevDate{font-weight:700;margin-bottom:3px}
 .editPanel{display:none;border-top:1px solid rgba(0,0,0,.06);padding:10px 12px}
-.editMode .editPanel{display:block}
-.editMode .rowMain{cursor:default}
 .editGrid{display:grid;grid-template-columns:140px 1fr;gap:8px}
 input,select,textarea,button{font:inherit}
 input,select,textarea{width:100%;border:1px solid #ddd;background:#fff;border-radius:9px;padding:9px}
@@ -44,12 +52,11 @@ textarea{min-height:64px;resize:vertical}
 .danger{color:var(--danger)}
 .fab{position:fixed;right:max(18px,calc((100vw - 720px)/2 + 18px));bottom:calc(72px + env(safe-area-inset-bottom));width:48px;height:48px;border-radius:50%;border:0;background:#171717;color:#fff;font-size:29px;line-height:48px;box-shadow:0 8px 20px rgba(0,0,0,.18)}
 .nav{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.96);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom));z-index:20}
-.navin{max-width:720px;margin:auto;display:grid;grid-template-columns:repeat(6,1fr)}
+.navin{max-width:720px;margin:auto;display:grid;grid-template-columns:repeat(5,1fr)}
 .nav button{border:0;background:transparent;padding:8px 2px;color:#777;touch-action:manipulation;-webkit-tap-highlight-color:transparent;min-height:46px;display:flex;align-items:center;justify-content:center}
 .nav button.active{color:#111}
 .nav svg{width:23px;height:23px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.nav .moreIcon{font-size:26px;line-height:1;letter-spacing:2px;transform:translateY(-2px)}
-.nav .editActive{color:#111;background:#f1f1f1;border-radius:12px}
+
 .calHead{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;margin-bottom:10px}
 .calTitle{text-align:center;font-size:21px;font-weight:700}
 .calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
@@ -121,7 +128,7 @@ h1{font-size:24px;margin:6px 0 14px}h2{font-size:18px;margin:18px 0 8px}
 
 <section id="info" class="view">
   <h1>Bilgi</h1>
-  <div class="card"><b>Uygulama</b><div>Agenda PWA · v12</div></div>
+  <div class="card"><b>Uygulama</b><div>Agenda PWA · v13</div></div>
   <div class="card"><b>Kod / Hosting</b><div>GitHub Pages · 25shpy/Agenda</div></div>
   <div class="card"><b>Veritabanı</b><div>Google Firebase · Cloud Firestore</div></div>
   <div class="card"><b>Firebase Project</b><div>agenda-faf9b</div></div>
@@ -146,9 +153,6 @@ h1{font-size:24px;margin:6px 0 14px}h2{font-size:18px;margin:18px 0 8px}
 </button>
 <button data-view="info" onclick="showView('info')" title="Bilgi" aria-label="Bilgi">
   <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01"/></svg>
-</button>
-<button id="moreBtn" onclick="toggleEditFromNav()" title="Düzenle" aria-label="Düzenle">
-  <span class="moreIcon">•••</span>
 </button>
 </div></nav>
 
@@ -190,7 +194,7 @@ const palette=[
   ['#6a3dc5','#f5f0ff'],['#c62828','#fff0f0'],['#00838f','#eefafa'],
   ['#ef6c00','#fff3ea'],['#5d4037','#f7f1ef'],['#455a64','#f1f4f5']
 ];
-let db=load(),current=todayISO(),calCursor=new Date(),editMode=false,openPrev=new Set();
+let db=load(),current=todayISO(),calCursor=new Date(),openPrev=new Set(),openEdit=new Set(),swipedId=null,touchState=null;
 
 function load(){try{return JSON.parse(localStorage.getItem(K))||{subjects:['Matematik','Fizik','Kimya'],entries:[]}}catch(e){return{subjects:['Matematik','Fizik','Kimya'],entries:[]}}}
 function save(){
@@ -294,50 +298,120 @@ function shortText(s=''){s=s.trim().replace(/\s+/g,' ');return s.length>90?s.sli
 function renderDay(){
  document.getElementById('dateTitle').textContent=pretty(current);
  const list=db.entries.filter(e=>e.date===current).sort((a,b)=>(a.created||'').localeCompare(b.created||''));
- document.getElementById('entries').className='list'+(editMode?' editMode':'');
+ document.getElementById('entries').className='list';
  document.getElementById('entries').innerHTML=list.map(e=>{
-   const [fg,bg]=colors(e.subject),p=previousFor(e),show=openPrev.has(e.id);
-   return `<div class="row" style="background:${bg}">
-     <div class="rowMain">
-       <div class="subject" style="color:${fg}">●&nbsp; ${esc(e.subject)}</div>
-       <div class="text">${esc(e.text||'')}</div>
-       <button class="prevToggle" onclick="event.stopPropagation();togglePrevious('${e.id}')">${p?'↶':''}</button>
-     </div>
-     ${p?`<div class="prevBox ${show?'show':''}" onclick="goDate('${p.date}')"><div class="prevDate">${pretty(p.date)}</div><div>${esc(p.text||'(boş)')}</div></div>`:''}
-     <div class="editPanel">
-       <div class="editGrid">
-         <select onchange="updateEntry('${e.id}','subject',this.value,true)">${subjectOptions(e.subject)}</select>
-         <textarea oninput="updateEntry('${e.id}','text',this.value,false)">${esc(e.text||'')}</textarea>
+   const [fg,bg]=colors(e.subject),p=previousFor(e),showPrev=openPrev.has(e.id),expanded=openEdit.has(e.id),swiped=swipedId===e.id;
+   return `<div class="row ${expanded?'expanded':''}" style="background:${bg}" data-id="${e.id}">
+     <div class="swipeShell">
+       <div class="swipeActions">
+         <button class="swipeRepeat" onclick="event.stopPropagation();openRepeatSwipe('${e.id}')">↻<br>Tekrar</button>
+         <button class="swipeDelete" onclick="event.stopPropagation();deleteEntry('${e.id}')">🗑<br>Sil</button>
        </div>
-       <div class="editActions">
-         <button class="smallBtn" onclick="toggleRepeat('${e.id}')">Tekrar</button>
-         <button class="smallBtn danger" onclick="deleteEntry('${e.id}')">Sil</button>
-       </div>
-       <div id="repeat-${e.id}" class="repeatSheet">
-         <div class="formRow"><input id="rf-${e.id}" type="date" value="${e.date}"><input id="rt-${e.id}" type="date" value="${e.date}"></div>
-         <div class="checks">
-           ${['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'].map((d,i)=>`<label><input type="checkbox" value="${i}" style="width:auto"> ${d}</label>`).join('')}
+       <div class="swipeContent ${swiped?'swiped':''}"
+            data-swipe-id="${e.id}"
+            ontouchstart="swipeStart(event,'${e.id}')"
+            ontouchmove="swipeMove(event,'${e.id}')"
+            ontouchend="swipeEnd(event,'${e.id}')">
+         <div class="rowMain" onclick="rowTap(event,'${e.id}')">
+           <div class="subject" style="color:${fg}">●&nbsp; ${esc(e.subject)}</div>
+           <div class="text">${esc(e.text||'')}</div>
+           <button class="prevToggle" onclick="event.stopPropagation();togglePrevious('${e.id}')">${p?'↶':''}</button>
          </div>
-         <button class="smallBtn" style="margin-top:8px" onclick="applyRepeat('${e.id}')">Uygula</button>
+         ${p?`<div class="prevBox ${showPrev?'show':''}" onclick="goDate('${p.date}')"><div class="prevDate">${pretty(p.date)}</div><div>${esc(p.text||'(boş)')}</div></div>`:''}
+         <div class="editPanel">
+           <div class="editGrid">
+             <select onchange="updateEntry('${e.id}','subject',this.value,true)">${subjectOptions(e.subject)}</select>
+             <textarea oninput="updateEntry('${e.id}','text',this.value,false)">${esc(e.text||'')}</textarea>
+           </div>
+         </div>
        </div>
      </div>
    </div>`
  }).join('');
 }
+function rowTap(ev,id){
+ if(touchState && touchState.moved) return;
+ if(swipedId){
+   if(swipedId===id){swipedId=null;renderDay();return}
+   swipedId=null;
+ }
+ if(openEdit.has(id)) openEdit.delete(id);
+ else openEdit.add(id);
+ renderDay();
+}
 
-function toggleEdit(){editMode=!editMode;renderDay()}
+function swipeStart(ev,id){
+ const t=ev.touches[0];
+ touchState={id,startX:t.clientX,startY:t.clientY,dx:0,moved:false};
+ const el=document.querySelector(`[data-swipe-id="${id}"]`);
+ if(el) el.classList.add('dragging');
+}
+
+function swipeMove(ev,id){
+ if(!touchState||touchState.id!==id)return;
+ const t=ev.touches[0];
+ const dx=t.clientX-touchState.startX;
+ const dy=t.clientY-touchState.startY;
+ if(Math.abs(dx)>8) touchState.moved=true;
+ if(Math.abs(dx)<=Math.abs(dy)) return;
+ ev.preventDefault();
+ touchState.dx=dx;
+ const el=document.querySelector(`[data-swipe-id="${id}"]`);
+ if(!el)return;
+ let base=(swipedId===id)?-150:0;
+ let x=Math.max(-150,Math.min(0,base+dx));
+ el.style.transform=`translateX(${x}px)`;
+}
+
+function swipeEnd(ev,id){
+ const el=document.querySelector(`[data-swipe-id="${id}"]`);
+ if(el){el.classList.remove('dragging');el.style.transform=''}
+ if(!touchState||touchState.id!==id){touchState=null;return}
+ const dx=touchState.dx;
+ const wasMoved=touchState.moved;
+ if(dx<-45) swipedId=id;
+ else if(dx>45 && swipedId===id) swipedId=null;
+ else if(wasMoved && swipedId!==id) swipedId=null;
+ touchState={moved:wasMoved};
+ renderDay();
+ setTimeout(()=>{touchState=null},50);
+}
+
+function openRepeatSwipe(id){
+ swipedId=null;
+ openEdit.add(id);
+ renderDay();
+ setTimeout(()=>{
+   const row=document.querySelector(`.row[data-id="${id}"]`);
+   if(!row)return;
+   const panel=row.querySelector('.editPanel');
+   if(!panel)return;
+   let old=panel.querySelector('.repeatSheet');
+   if(old) old.remove();
+   const e=db.entries.find(x=>x.id===id);
+   const box=document.createElement('div');
+   box.className='repeatSheet show';
+   box.id='repeat-'+id;
+   box.innerHTML=`
+     <div class="formRow"><input id="rf-${id}" type="date" value="${e.date}"><input id="rt-${id}" type="date" value="${e.date}"></div>
+     <div class="checks">${['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'].map((d,i)=>`<label><input type="checkbox" value="${i}" style="width:auto"> ${d}</label>`).join('')}</div>
+     <button class="smallBtn" style="margin-top:8px" onclick="applyRepeat('${id}')">Uygula</button>`;
+   panel.appendChild(box);
+   box.scrollIntoView({behavior:'smooth',block:'nearest'});
+ },0);
+}
+
 function addEntry(){
  if(!db.subjects.length){showView('settings');return}
  const e={id:uid(),date:current,subject:db.subjects[0],text:'',created:new Date().toISOString()};
- db.entries.push(e);save();editMode=true;renderDay();
+ db.entries.push(e);save();openEdit.add(e.id);renderDay();
 }
 function updateEntry(id,k,v,rerender){let e=db.entries.find(x=>x.id===id);if(!e)return;e[k]=v;save();if(rerender)renderDay()}
-function deleteEntry(id){db.entries=db.entries.filter(x=>x.id!==id);save();renderDay();renderCalendar()}
-function shift(n){let d=parseISO(current);d.setDate(d.getDate()+n);current=iso(d);openPrev.clear();renderDay()}
+function deleteEntry(id){db.entries=db.entries.filter(x=>x.id!==id);openEdit.delete(id);openPrev.delete(id);if(swipedId===id)swipedId=null;save();renderDay();renderCalendar()}
+function shift(n){let d=parseISO(current);d.setDate(d.getDate()+n);current=iso(d);openPrev.clear();openEdit.clear();swipedId=null;renderDay()}
 function togglePrevious(id){if(openPrev.has(id))openPrev.delete(id);else openPrev.add(id);renderDay()}
-function goDate(s){current=s;openPrev.clear();renderDay();showView('today')}
+function goDate(s){current=s;openPrev.clear();openEdit.clear();swipedId=null;renderDay();showView('today')}
 
-function toggleRepeat(id){document.getElementById('repeat-'+id)?.classList.toggle('show')}
 function applyRepeat(id){
  const src=db.entries.find(e=>e.id===id),box=document.getElementById('repeat-'+id);
  const f=document.getElementById('rf-'+id).value,t=document.getElementById('rt-'+id).value;
@@ -453,24 +527,10 @@ function setupAuth(){
  setCloudStatus('Firebase hazır · giriş bekleniyor','muted');
 }
 
-function toggleEditFromNav(){
- if(!document.getElementById('today').classList.contains('active')){
-   showView('today');
- }
- editMode=!editMode;
- const btn=document.getElementById('moreBtn');
- if(btn) btn.classList.toggle('editActive',editMode);
- renderDay();
-}
 
 function showView(v){
  document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.id===v));
  document.querySelectorAll('.nav button[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===v));
- if(v!=='today' && editMode){
-   editMode=false;
-   const mb=document.getElementById('moreBtn');
-   if(mb) mb.classList.remove('editActive');
- }
  if(v==='calendar')renderCalendar();
  if(v==='settings'||v==='search')renderSubjects();
 }
