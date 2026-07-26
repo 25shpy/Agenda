@@ -32,7 +32,7 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,B
 .swipeActions button{border:0;color:#fff;font-weight:700;font-size:13px}
 .swipeRepeat{background:#666}
 .swipeDelete{background:#c62828}
-.swipeContent{position:relative;z-index:2;transition:transform .2s ease;background:inherit;touch-action:pan-y;min-height:58px}
+.swipeContent{position:relative;z-index:2;transition:transform .2s ease;background:inherit;touch-action:pan-y;min-height:58px;user-select:none;-webkit-user-select:none}
 .swipeContent.swiped{transform:translateX(-150px)}
 .swipeContent.dragging{transition:none}
 .rowLine{display:grid;grid-template-columns:150px 1fr;align-items:stretch}
@@ -134,7 +134,7 @@ h1{font-size:24px;margin:6px 0 14px}h2{font-size:18px;margin:18px 0 8px}
 
 <section id="info" class="view">
   <h1>Bilgi</h1>
-  <div class="card"><b>Uygulama</b><div>Agenda PWA · v14</div></div>
+  <div class="card"><b>Uygulama</b><div>Agenda PWA · v16</div></div>
   <div class="card"><b>Kod / Hosting</b><div>GitHub Pages · 25shpy/Agenda</div></div>
   <div class="card"><b>Veritabanı</b><div>Google Firebase · Cloud Firestore</div></div>
   <div class="card"><b>Firebase Project</b><div>agenda-faf9b</div></div>
@@ -327,9 +327,10 @@ function renderDay(){
 
          <div class="swipeContent ${swiped?'swiped':''}"
               data-swipe-id="${e.id}"
-              ontouchstart="swipeStart(event,'${e.id}')"
-              ontouchmove="swipeMove(event,'${e.id}')"
-              ontouchend="swipeEnd(event,'${e.id}')">
+              onpointerdown="swipeStart(event,'${e.id}')"
+              onpointermove="swipeMove(event,'${e.id}')"
+              onpointerup="swipeEnd(event,'${e.id}')"
+              onpointercancel="swipeCancel(event,'${e.id}')">
 
            <div class="textMain" onclick="rowTap(event,'${e.id}')">
              <div class="text">${esc(e.text||'')}</div>
@@ -366,40 +367,81 @@ function rowTap(ev,id){
 }
 
 function swipeStart(ev,id){
- const t=ev.touches[0];
- touchState={id,startX:t.clientX,startY:t.clientY,dx:0,moved:false};
+ if(ev.pointerType==='mouse' && ev.button!==0) return;
  const el=document.querySelector(`[data-swipe-id="${id}"]`);
- if(el) el.classList.add('dragging');
+ if(!el)return;
+ try{el.setPointerCapture(ev.pointerId)}catch(_){}
+ touchState={
+   id,
+   pointerId:ev.pointerId,
+   startX:ev.clientX,
+   startY:ev.clientY,
+   dx:0,
+   moved:false,
+   horizontal:false,
+   base:swipedId===id?-150:0
+ };
+ el.classList.add('dragging');
 }
 
 function swipeMove(ev,id){
- if(!touchState||touchState.id!==id)return;
- const t=ev.touches[0];
- const dx=t.clientX-touchState.startX;
- const dy=t.clientY-touchState.startY;
- if(Math.abs(dx)>8) touchState.moved=true;
- if(Math.abs(dx)<=Math.abs(dy)) return;
+ if(!touchState||touchState.id!==id||touchState.pointerId!==ev.pointerId)return;
+
+ const dx=ev.clientX-touchState.startX;
+ const dy=ev.clientY-touchState.startY;
+
+ if(!touchState.horizontal){
+   if(Math.abs(dx)<7 && Math.abs(dy)<7)return;
+   if(Math.abs(dy)>Math.abs(dx)){
+     return;
+   }
+   touchState.horizontal=true;
+ }
+
+ if(!touchState.horizontal)return;
+
  ev.preventDefault();
  touchState.dx=dx;
+ touchState.moved=true;
+
  const el=document.querySelector(`[data-swipe-id="${id}"]`);
  if(!el)return;
- let base=(swipedId===id)?-150:0;
- let x=Math.max(-150,Math.min(0,base+dx));
+
+ const x=Math.max(-150,Math.min(0,touchState.base+dx));
  el.style.transform=`translateX(${x}px)`;
 }
 
 function swipeEnd(ev,id){
+ if(!touchState||touchState.id!==id||touchState.pointerId!==ev.pointerId)return;
+
+ const state=touchState;
  const el=document.querySelector(`[data-swipe-id="${id}"]`);
- if(el){el.classList.remove('dragging');el.style.transform=''}
- if(!touchState||touchState.id!==id){touchState=null;return}
- const dx=touchState.dx;
- const wasMoved=touchState.moved;
- if(dx<-45) swipedId=id;
- else if(dx>45 && swipedId===id) swipedId=null;
- else if(wasMoved && swipedId!==id) swipedId=null;
- touchState={moved:wasMoved};
+
+ if(el){
+   try{el.releasePointerCapture(ev.pointerId)}catch(_){}
+   el.classList.remove('dragging');
+   el.style.transform='';
+ }
+
+ if(state.horizontal){
+   const finalX=state.base+state.dx;
+   if(finalX < -65) swipedId=id;
+   else if(finalX > -85) swipedId=null;
+ }
+ touchState={moved:state.moved};
+
  renderDay();
- setTimeout(()=>{touchState=null},50);
+ setTimeout(()=>{touchState=null},80);
+}
+
+function swipeCancel(ev,id){
+ const el=document.querySelector(`[data-swipe-id="${id}"]`);
+ if(el){
+   el.classList.remove('dragging');
+   el.style.transform='';
+ }
+ touchState=null;
+ renderDay();
 }
 
 function openRepeatSwipe(id){
