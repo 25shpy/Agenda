@@ -129,7 +129,7 @@ h1{font-size:24px;margin:6px 0 14px}h2{font-size:18px;margin:18px 0 8px}
 
 <section id="info" class="view">
   <h1>Bilgi</h1>
-  <div class="card"><b>Uygulama</b><div>Agenda PWA · v18</div></div>
+  <div class="card"><b>Uygulama</b><div>Agenda PWA · v19</div></div>
   <div class="card"><b>Kod / Hosting</b><div>GitHub Pages · 25shpy/Agenda</div></div>
   <div class="card"><b>Veritabanı</b><div>Google Firebase · Cloud Firestore</div></div>
   <div class="card"><b>Firebase Project</b><div>agenda-faf9b</div></div>
@@ -308,7 +308,7 @@ function renderDay(){
          expanded=openEdit.has(e.id),
          swiped=swipedId===e.id;
 
-   return `<div class="row ${expanded?'expanded':''}" style="background:${bg}" data-id="${e.id}">
+   return `<div class="row ${expanded?'expanded':''}" style="--row-bg:${bg};background:${bg}" data-id="${e.id}">
      <div class="swipeShell">
        <div class="swipeActions">
          <button class="swipeRepeat" onclick="event.stopPropagation();openRepeatSwipe('${e.id}')">↻<br>Tekrar</button>
@@ -632,5 +632,52 @@ if('serviceWorker' in navigator){
 }
 @media(max-width:430px){
  .rowMain{grid-template-columns:112px minmax(0,1fr) 32px !important;}
+}
+</style>
+
+<style>
+/* v19 swipe fix: actions are genuinely hidden behind an opaque full-row foreground */
+.row{
+  position:relative !important;
+  overflow:hidden !important;
+  background:var(--row-bg) !important;
+}
+.swipeShell{
+  position:relative !important;
+  overflow:hidden !important;
+  width:100% !important;
+  background:var(--row-bg) !important;
+}
+.swipeActions{
+  position:absolute !important;
+  top:0 !important;
+  right:0 !important;
+  bottom:0 !important;
+  width:150px !important;
+  display:grid !important;
+  grid-template-columns:75px 75px !important;
+  z-index:1 !important;
+  visibility:visible !important;
+}
+.swipeContent{
+  position:relative !important;
+  z-index:5 !important;
+  width:100% !important;
+  background:var(--row-bg) !important;
+  transform:translateX(0);
+  transition:transform .18s ease !important;
+  touch-action:pan-y !important;
+  will-change:transform;
+}
+.swipeContent .rowMain,
+.swipeContent .prevBox,
+.swipeContent .editPanel{
+  background:var(--row-bg) !important;
+}
+.swipeContent.swiped{
+  transform:translateX(-150px) !important;
+}
+.swipeContent.dragging{
+  transition:none !important;
 }
 </style>
