@@ -197,7 +197,7 @@ h1{font-size:24px;margin:6px 0 14px}h2{font-size:18px;margin:18px 0 8px}
 
 <section id="info" class="view">
   <h1>Bilgi</h1>
-  <div class="card"><b>Uygulama</b><div>Agenda PWA · v27</div></div>
+  <div class="card"><b>Uygulama</b><div>Agenda PWA · v28</div></div>
   <div class="card"><b>Kod / Hosting</b><div>GitHub Pages · 25shpy/Agenda</div></div>
   <div class="card"><b>Veritabanı</b><div>Google Firebase · Cloud Firestore</div></div>
   <div class="card"><b>Firebase Project</b><div>agenda-faf9b</div></div>
@@ -651,41 +651,39 @@ function updateAuthUI(user){
 }
 
 let authBusy=false;
-function isStandaloneApp(){
- return window.matchMedia('(display-mode: standalone)').matches ||
-        window.navigator.standalone===true;
-}
+
 async function authAction(){
  if(authBusy)return;
  authBusy=true;
+
  const btn=document.getElementById('authButton');
  if(btn)btn.disabled=true;
+
  try{
    if(!auth){
      alert('Firebase henüz hazır değil. Birkaç saniye sonra tekrar dene.');
      return;
    }
+
    if(currentUser){
      await auth.signOut();
      return;
    }
+
    await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
    const provider=new firebase.auth.GoogleAuthProvider();
    provider.setCustomParameters({prompt:'select_account'});
-   if(isStandaloneApp()){
-     await auth.signInWithRedirect(provider);
-     return;
-   }
-   const result=await auth.signInWithPopup(provider);
-   if(result&&result.user){
-     updateAuthUI(result.user);
-     await startCloud(result.user);
-   }
+
+   // Safari ve iPhone Ana Ekran uygulaması için popup kullanmıyoruz.
+   // Her yerde redirect kullan.
+   sessionStorage.setItem('agendaAuthRedirect','1');
+   await auth.signInWithRedirect(provider);
+
  }catch(e){
    console.error('Google auth error',e);
-   if(e.code!=='auth/cancelled-popup-request'){
-     alert('Google giriş hatası: '+(e.code||'')+' '+(e.message||e));
-   }
+   sessionStorage.removeItem('agendaAuthRedirect');
+   alert('Google giriş hatası: '+(e.code||'')+' '+(e.message||e));
  }finally{
    authBusy=false;
    if(btn)btn.disabled=false;
@@ -709,18 +707,31 @@ let authSetupDone=false;
 function setupAuth(){
  if(authSetupDone||!auth)return;
  authSetupDone=true;
- auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(e=>console.error('Persistence error',e));
- auth.getRedirectResult().catch(e=>{
-   console.error('Redirect auth error',e);
-   if(e.code!=='auth/no-auth-event'){
+
+ auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+   .catch(e=>console.error('Persistence error',e));
+
+ // Redirect dönüşünü burada tamamla.
+ auth.getRedirectResult()
+   .then(async result=>{
+     sessionStorage.removeItem('agendaAuthRedirect');
+     if(result&&result.user){
+       updateAuthUI(result.user);
+       await startCloud(result.user);
+     }
+   })
+   .catch(e=>{
+     sessionStorage.removeItem('agendaAuthRedirect');
+     console.error('Redirect auth error',e);
      setCloudStatus('Google giriş hatası: '+(e.message||e),'clouderr');
-   }
- });
+   });
+
  auth.onAuthStateChanged(async user=>{
    updateAuthUI(user);
    if(user) await startCloud(user);
    else stopCloud();
  });
+
  setCloudStatus('Firebase hazır · giriş bekleniyor','muted');
 }
 
