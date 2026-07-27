@@ -197,7 +197,7 @@ h1{font-size:24px;margin:6px 0 14px}h2{font-size:18px;margin:18px 0 8px}
 
 <section id="info" class="view">
   <h1>Bilgi</h1>
-  <div class="card"><b>Uygulama</b><div>Agenda PWA · v28</div></div>
+  <div class="card"><b>Uygulama</b><div>Agenda PWA · v29</div></div>
   <div class="card"><b>Kod / Hosting</b><div>GitHub Pages · 25shpy/Agenda</div></div>
   <div class="card"><b>Veritabanı</b><div>Google Firebase · Cloud Firestore</div></div>
   <div class="card"><b>Firebase Project</b><div>agenda-faf9b</div></div>
@@ -231,7 +231,7 @@ h1{font-size:24px;margin:6px 0 14px}h2{font-size:18px;margin:18px 0 8px}
 <script>
 const firebaseConfig={
   apiKey:"AIzaSyDMFvDhKKuiIpLalznUVHBh0tXLpU9_8UU",
-  authDomain:"agenda-faf9b.firebaseapp.com",
+  authDomain:"agenda-faf9b.web.app",
   projectId:"agenda-faf9b",
   storageBucket:"agenda-faf9b.firebasestorage.app",
   messagingSenderId:"1013124260211",
@@ -713,11 +713,10 @@ function setupAuth(){
 
  // Redirect dönüşünü burada tamamla.
  auth.getRedirectResult()
-   .then(async result=>{
+   .then(result=>{
      sessionStorage.removeItem('agendaAuthRedirect');
      if(result&&result.user){
        updateAuthUI(result.user);
-       await startCloud(result.user);
      }
    })
    .catch(e=>{
@@ -728,8 +727,15 @@ function setupAuth(){
 
  auth.onAuthStateChanged(async user=>{
    updateAuthUI(user);
-   if(user) await startCloud(user);
-   else stopCloud();
+   if(user){
+     if(!cloudReady || !currentUser || currentUser.uid!==user.uid){
+       await startCloud(user);
+     }else{
+       setCloudStatus('Bulutta kayıtlı · Firestore','cloudok');
+     }
+   }else{
+     stopCloud();
+   }
  });
 
  setCloudStatus('Firebase hazır · giriş bekleniyor','muted');
