@@ -148,6 +148,23 @@ h1{font-size:24px;margin:6px 0 14px}h2{font-size:18px;margin:18px 0 8px}
 .prevDate{font-size:12px;color:#666;margin-bottom:3px}
 </style>
 
+
+<style id="v30-search-status">
+.searchActions{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-top:2px;
+}
+.searchActions .smallBtn:last-child{margin-left:auto}
+.latestStatusTitle{
+  margin:14px 0 8px;
+  font-size:15px;
+  font-weight:700;
+}
+</style>
+
 </head>
 <body data-version="v9">
 <main class="app">
@@ -178,7 +195,10 @@ h1{font-size:24px;margin:6px 0 14px}h2{font-size:18px;margin:18px 0 8px}
   <h1>Ara</h1>
   <div class="formRow"><select id="searchSubject"></select><input id="searchText" placeholder="Metinde ara"></div>
   <div class="formRow"><input id="searchFrom" type="date"><input id="searchTo" type="date"></div>
-  <button class="smallBtn" onclick="runSearch()">Ara</button>
+  <div class="searchActions">
+    <button class="smallBtn" onclick="runSearch()">Ara</button>
+    <button class="smallBtn" onclick="showLatestStatus()">Son durum</button>
+  </div>
   <div id="results"></div>
 </section>
 
@@ -197,8 +217,10 @@ h1{font-size:24px;margin:6px 0 14px}h2{font-size:18px;margin:18px 0 8px}
 
 <section id="info" class="view">
   <h1>Bilgi</h1>
-  <div class="card"><b>Uygulama</b><div>Agenda PWA · v29</div></div>
-  <div class="card"><b>Kod / Hosting</b><div>GitHub Pages · 25shpy/Agenda</div></div>
+  <div class="card"><b>Uygulama</b><div>Agenda PWA · v30</div></div>
+  <div class="card"><b>Hosting</b><div>Firebase Hosting · agenda-faf9b.web.app</div></div>
+  <div class="card"><b>Kod & sürüm geçmişi</b><div>GitHub · 25shpy/Agenda</div></div>
+  <div class="card"><b>Deploy</b><div>GitHub Actions → Firebase Hosting</div></div>
   <div class="card"><b>Veritabanı</b><div>Google Firebase · Cloud Firestore</div></div>
   <div class="card"><b>Firebase Project</b><div>agenda-faf9b</div></div>
   <div class="card"><b>Giriş yapan hesap</b><div id="infoEmail" class="muted">Henüz giriş yapılmadı</div></div>
@@ -578,7 +600,7 @@ function applyRepeat(id){
    const idx=(d.getDay()+6)%7,s=iso(d);
    if(wd.includes(idx)){
      db.entries.push({
-       id:uid(),date:s,subject:src.subject,text:src.text,
+       id:uid(),date:s,subject:src.subject,text:'',
        created:new Date().toISOString(),series
      });
      count++;
@@ -626,6 +648,41 @@ function runSearch(){
  let sub=document.getElementById('searchSubject').value,q=document.getElementById('searchText').value.toLocaleLowerCase('tr-TR'),f=document.getElementById('searchFrom').value,t=document.getElementById('searchTo').value;
  let a=db.entries.filter(e=>(!sub||e.subject===sub)&&(!q||e.text.toLocaleLowerCase('tr-TR').includes(q))&&(!f||e.date>=f)&&(!t||e.date<=t)).sort((a,b)=>a.date.localeCompare(b.date));
  document.getElementById('results').innerHTML=a.length?a.map(e=>{let [fg,bg]=colors(e.subject);return `<div class="result" onclick="goDate('${e.date}')" style="background:${bg};padding:10px;border-radius:9px;margin-top:6px"><b style="color:${fg}">${pretty(e.date)} · ${esc(e.subject)}</b><div>${esc(e.text||'(boş)')}</div></div>`}).join(''):'<p class="muted">Kayıt bulunamadı.</p>'
+}
+
+
+function showLatestStatus(){
+  const latest=[];
+
+  db.subjects.forEach(subject=>{
+    const found=db.entries
+      .filter(e=>e.subject===subject && String(e.text||'').trim()!=='')
+      .sort((a,b)=>{
+        const byDate=b.date.localeCompare(a.date);
+        if(byDate!==0)return byDate;
+        return (b.created||'').localeCompare(a.created||'');
+      })[0];
+
+    if(found) latest.push(found);
+  });
+
+  latest.sort((a,b)=>db.subjects.indexOf(a.subject)-db.subjects.indexOf(b.subject));
+
+  const box=document.getElementById('results');
+  if(!latest.length){
+    box.innerHTML='<div class="latestStatusTitle">Son durum</div><p class="muted">Açıklaması olan kayıt bulunamadı.</p>';
+    return;
+  }
+
+  box.innerHTML='<div class="latestStatusTitle">Son durum</div>'+latest.map(e=>{
+    const [fg,bg]=colors(e.subject);
+    return `<div class="result"
+                 onclick="goDate('${e.date}')"
+                 style="background:${bg};padding:10px;border-radius:9px;margin-top:6px">
+      <b style="color:${fg}">${esc(e.subject)} · ${pretty(e.date)}</b>
+      <div>${esc(e.text)}</div>
+    </div>`;
+  }).join('');
 }
 
 function exportData(){let blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`agenda-yedek-${todayISO()}.json`;a.click();URL.revokeObjectURL(a.href)}
