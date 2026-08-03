@@ -165,6 +165,24 @@ h1{font-size:24px;margin:6px 0 14px}h2{font-size:18px;margin:18px 0 8px}
 }
 </style>
 
+
+<style id="v32-global-status">
+:root{--status-panel-h:178px}
+.app{padding-bottom:calc(72px + var(--status-panel-h) + env(safe-area-inset-bottom)) !important}
+.globalStatusPanel{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(58px + env(safe-area-inset-bottom));width:min(720px,100%);z-index:18;background:rgba(255,255,255,.97);border-top:1px solid var(--line);box-shadow:0 -6px 18px rgba(0,0,0,.045);padding:7px 14px 8px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.globalStatusHead{min-height:22px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#4b2bbd;margin-bottom:3px}
+.statusRefreshBtn{border:0;background:transparent;color:#5f35d4;font-size:17px;line-height:1;padding:1px 4px;touch-action:manipulation}
+.globalStatusItems{display:flex;flex-direction:column;gap:1px}
+.globalStatusItem{display:grid;grid-template-columns:minmax(82px,120px) minmax(0,1fr);align-items:center;gap:7px;min-height:27px;padding:3px 5px;border-radius:7px;cursor:pointer;font-size:11px}
+.globalStatusSubject{display:flex;align-items:center;gap:5px;min-width:0;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.globalStatusDot{width:8px;height:8px;min-width:8px;border-radius:50%}
+.globalStatusText{min-width:0;display:flex;justify-content:space-between;gap:8px}
+.globalStatusDesc{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.globalStatusDate{color:#888;white-space:nowrap;font-size:10px}
+.globalStatusMore{width:100%;border:0;background:transparent;color:#5f35d4;font-size:11px;font-weight:700;padding:5px 0 1px;touch-action:manipulation}
+.globalStatusPanel.expanded{max-height:54vh;overflow:auto}
+@media(max-width:430px){:root{--status-panel-h:174px}.globalStatusPanel{padding-left:10px;padding-right:10px}.globalStatusItem{grid-template-columns:minmax(78px,105px) minmax(0,1fr);font-size:10.5px}}
+</style>
 </head>
 <body data-version="v9">
 <main class="app">
@@ -217,7 +235,7 @@ h1{font-size:24px;margin:6px 0 14px}h2{font-size:18px;margin:18px 0 8px}
 
 <section id="info" class="view">
   <h1>Bilgi</h1>
-  <div class="card"><b>Uygulama</b><div>Agenda PWA · v31</div></div>
+  <div class="card"><b>Uygulama</b><div>Agenda PWA · v32</div></div>
   <div class="card"><b>Hosting</b><div>Firebase Hosting · agenda-faf9b.web.app</div></div>
   <div class="card"><b>Kod & sürüm geçmişi</b><div>GitHub · 25shpy/Agenda</div></div>
   <div class="card"><b>Deploy</b><div>GitHub Actions → Firebase Hosting</div></div>
@@ -228,6 +246,16 @@ h1{font-size:24px;margin:6px 0 14px}h2{font-size:18px;margin:18px 0 8px}
   <div class="card"><b>Veri durumu</b><div id="cloudStatus" class="muted">Google girişi bekleniyor.</div></div>
 </section>
 </main>
+
+
+<section id="globalStatusPanel" class="globalStatusPanel">
+  <div class="globalStatusHead">
+    <b>Son durum</b>
+    <button class="statusRefreshBtn" onclick="renderGlobalStatus()">↻</button>
+  </div>
+  <div id="globalStatusItems" class="globalStatusItems"></div>
+  <button id="globalStatusMore" class="globalStatusMore" onclick="toggleGlobalStatus()">Tümünü gör ›</button>
+</section>
 
 <nav class="nav"><div class="navin">
 <button class="active" data-view="today" onclick="showView('today')" title="Gün" aria-label="Gün">
@@ -285,7 +313,7 @@ const palette=[
   ['#6a3dc5','#f5f0ff'],['#c62828','#fff0f0'],['#00838f','#eefafa'],
   ['#ef6c00','#fff3ea'],['#5d4037','#f7f1ef'],['#455a64','#f1f4f5']
 ];
-let db=load(),current=todayISO(),calCursor=new Date(),openPrev=new Set(),openEdit=new Set(),swipedId=null,touchState=null,repeatOpenId=null;
+let db=load(),current=todayISO(),calCursor=new Date(),openPrev=new Set(),openEdit=new Set(),swipedId=null,touchState=null,repeatOpenId=null,globalStatusExpanded=false;
 
 function load(){try{return JSON.parse(localStorage.getItem(K))||{subjects:['Matematik','Fizik','Kimya'],entries:[]}}catch(e){return{subjects:['Matematik','Fizik','Kimya'],entries:[]}}}
 function save(){
@@ -586,6 +614,7 @@ function updateEntry(id,k,v,rerender){
  if(!e)return;
  e[k]=v;
  save();
+ renderGlobalStatus();
  if(rerender)setTimeout(()=>renderDay(),0);
 }
 function deleteEntry(id){db.entries=db.entries.filter(x=>x.id!==id);openEdit.delete(id);openPrev.delete(id);if(swipedId===id)swipedId=null;if(repeatOpenId===id)repeatOpenId=null;save();renderDay();renderCalendar()}
@@ -696,22 +725,48 @@ function latestTextForSubject(subject,excludeId=null){
   return found ? found.text : '';
 }
 
+
+function latestStatusEntries(){
+ const latest=[];
+ db.subjects.forEach(subject=>{
+   const found=db.entries
+     .filter(e=>e.subject===subject&&String(e.text||'').trim()!=='')
+     .sort((a,b)=>b.date.localeCompare(a.date)||(b.created||'').localeCompare(a.created||''))[0];
+   if(found)latest.push(found);
+ });
+ return latest.sort((a,b)=>b.date.localeCompare(a.date)||(b.created||'').localeCompare(a.created||''));
+}
+function renderGlobalStatus(){
+ const panel=document.getElementById('globalStatusPanel');
+ const box=document.getElementById('globalStatusItems');
+ const more=document.getElementById('globalStatusMore');
+ if(!panel||!box||!more)return;
+ const all=latestStatusEntries();
+ const shown=globalStatusExpanded?all:all.slice(0,4);
+ panel.classList.toggle('expanded',globalStatusExpanded);
+ if(!shown.length){
+   box.innerHTML='<div class="muted" style="font-size:11px;padding:4px">Açıklaması olan kayıt yok.</div>';
+   more.style.display='none';
+   return;
+ }
+ box.innerHTML=shown.map(e=>{
+   const [fg,bg]=colors(e.subject);
+   return `<div class="globalStatusItem" style="background:${bg}" onclick="goDate('${e.date}')">
+     <div class="globalStatusSubject" style="color:${fg}"><span class="globalStatusDot" style="background:${fg}"></span><span>${esc(e.subject)}</span></div>
+     <div class="globalStatusText"><span class="globalStatusDesc">${esc(e.text)}</span><span class="globalStatusDate">${e.date.slice(8,10)}.${e.date.slice(5,7)}</span></div>
+   </div>`;
+ }).join('');
+ more.style.display=all.length>4?'block':'none';
+ more.textContent=globalStatusExpanded?'Daha az göster ↑':'Tümünü gör ›';
+}
+function toggleGlobalStatus(){
+ globalStatusExpanded=!globalStatusExpanded;
+ renderGlobalStatus();
+}
+
 function showLatestStatus(){
-  const latest=[];
-
-  db.subjects.forEach(subject=>{
-    const found=db.entries
-      .filter(e=>e.subject===subject && String(e.text||'').trim()!=='')
-      .sort((a,b)=>{
-        const byDate=b.date.localeCompare(a.date);
-        if(byDate!==0)return byDate;
-        return (b.created||'').localeCompare(a.created||'');
-      })[0];
-
-    if(found) latest.push(found);
-  });
-
-  latest.sort((a,b)=>db.subjects.indexOf(a.subject)-db.subjects.indexOf(b.subject));
+  const latest=latestStatusEntries()
+    .sort((a,b)=>db.subjects.indexOf(a.subject)-db.subjects.indexOf(b.subject));
 
   const box=document.getElementById('results');
   if(!latest.length){
@@ -851,7 +906,7 @@ function showView(v){
  if(v==='settings'||v==='search')renderSubjects();
 }
 
-function renderAll(){renderSubjects();renderDay();renderCalendar()}
+function renderAll(){renderSubjects();renderDay();renderCalendar();renderGlobalStatus()}
 renderAll();
 setTimeout(initFirebaseSafe,0);
 if('serviceWorker' in navigator){
