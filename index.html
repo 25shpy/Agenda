@@ -167,13 +167,13 @@ h1{font-size:24px;margin:6px 0 14px}h2{font-size:18px;margin:18px 0 8px}
 
 
 <style id="v32-global-status">
-:root{--status-panel-h:178px}
+:root{--status-panel-h:292px}
 .app{padding-bottom:calc(72px + var(--status-panel-h) + env(safe-area-inset-bottom)) !important}
 .globalStatusPanel{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(58px + env(safe-area-inset-bottom));width:min(720px,100%);z-index:18;background:rgba(255,255,255,.97);border-top:1px solid var(--line);box-shadow:0 -6px 18px rgba(0,0,0,.045);padding:7px 14px 8px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
 .globalStatusHead{min-height:22px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#4b2bbd;margin-bottom:3px}
 .statusRefreshBtn{border:0;background:transparent;color:#5f35d4;font-size:17px;line-height:1;padding:1px 4px;touch-action:manipulation}
 .globalStatusItems{display:flex;flex-direction:column;gap:1px}
-.globalStatusItem{display:grid;grid-template-columns:minmax(82px,120px) minmax(0,1fr);align-items:center;gap:7px;min-height:27px;padding:3px 5px;border-radius:7px;cursor:pointer;font-size:11px}
+.globalStatusItem{display:grid;grid-template-columns:minmax(82px,120px) minmax(0,1fr);align-items:center;gap:7px;min-height:25px;padding:2px 5px;border-radius:7px;cursor:pointer;font-size:11px}
 .globalStatusSubject{display:flex;align-items:center;gap:5px;min-width:0;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .globalStatusDot{width:8px;height:8px;min-width:8px;border-radius:50%}
 .globalStatusText{min-width:0;display:flex;justify-content:space-between;gap:8px}
@@ -181,8 +181,16 @@ h1{font-size:24px;margin:6px 0 14px}h2{font-size:18px;margin:18px 0 8px}
 .globalStatusDate{color:#888;white-space:nowrap;font-size:10px}
 .globalStatusMore{width:100%;border:0;background:transparent;color:#5f35d4;font-size:11px;font-weight:700;padding:5px 0 1px;touch-action:manipulation}
 .globalStatusPanel.expanded{max-height:54vh;overflow:auto}
-@media(max-width:430px){:root{--status-panel-h:174px}.globalStatusPanel{padding-left:10px;padding-right:10px}.globalStatusItem{grid-template-columns:minmax(78px,105px) minmax(0,1fr);font-size:10.5px}}
+@media(max-width:430px){:root{--status-panel-h:286px}.globalStatusPanel{padding-left:10px;padding-right:10px}.globalStatusItem{grid-template-columns:minmax(78px,105px) minmax(0,1fr);font-size:10.5px}}
 </style>
+
+<style id="v33-fab-fix">
+.fab{
+  bottom:calc(72px + var(--status-panel-h) + env(safe-area-inset-bottom)) !important;
+  z-index:25 !important;
+}
+</style>
+
 </head>
 <body data-version="v9">
 <main class="app">
@@ -235,7 +243,7 @@ h1{font-size:24px;margin:6px 0 14px}h2{font-size:18px;margin:18px 0 8px}
 
 <section id="info" class="view">
   <h1>Bilgi</h1>
-  <div class="card"><b>Uygulama</b><div>Agenda PWA · v32</div></div>
+  <div class="card"><b>Uygulama</b><div>Agenda PWA · v34</div></div>
   <div class="card"><b>Hosting</b><div>Firebase Hosting · agenda-faf9b.web.app</div></div>
   <div class="card"><b>Kod & sürüm geçmişi</b><div>GitHub · 25shpy/Agenda</div></div>
   <div class="card"><b>Deploy</b><div>GitHub Actions → Firebase Hosting</div></div>
@@ -742,7 +750,7 @@ function renderGlobalStatus(){
  const more=document.getElementById('globalStatusMore');
  if(!panel||!box||!more)return;
  const all=latestStatusEntries();
- const shown=globalStatusExpanded?all:all.slice(0,4);
+ const shown=globalStatusExpanded?all:all.slice(0,8);
  panel.classList.toggle('expanded',globalStatusExpanded);
  if(!shown.length){
    box.innerHTML='<div class="muted" style="font-size:11px;padding:4px">Açıklaması olan kayıt yok.</div>';
@@ -756,7 +764,7 @@ function renderGlobalStatus(){
      <div class="globalStatusText"><span class="globalStatusDesc">${esc(e.text)}</span><span class="globalStatusDate">${e.date.slice(8,10)}.${e.date.slice(5,7)}</span></div>
    </div>`;
  }).join('');
- more.style.display=all.length>4?'block':'none';
+ more.style.display=all.length>8?'block':'none';
  more.textContent=globalStatusExpanded?'Daha az göster ↑':'Tümünü gör ›';
 }
 function toggleGlobalStatus(){
