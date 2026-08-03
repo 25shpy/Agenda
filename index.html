@@ -217,7 +217,7 @@ h1{font-size:24px;margin:6px 0 14px}h2{font-size:18px;margin:18px 0 8px}
 
 <section id="info" class="view">
   <h1>Bilgi</h1>
-  <div class="card"><b>Uygulama</b><div>Agenda PWA · v30</div></div>
+  <div class="card"><b>Uygulama</b><div>Agenda PWA · v31</div></div>
   <div class="card"><b>Hosting</b><div>Firebase Hosting · agenda-faf9b.web.app</div></div>
   <div class="card"><b>Kod & sürüm geçmişi</b><div>GitHub · 25shpy/Agenda</div></div>
   <div class="card"><b>Deploy</b><div>GitHub Actions → Firebase Hosting</div></div>
@@ -438,7 +438,7 @@ function renderDay(){
 
          <div class="editPanel" onclick="event.stopPropagation()">
            <div class="editGrid">
-             <select onchange="updateEntry('${e.id}','subject',this.value,true)">
+             <select onchange="changeEntrySubject('${e.id}',this.value)">
                ${subjectOptions(e.subject)}
              </select>
              <textarea placeholder="Açıklama..." oninput="updateEntry('${e.id}','text',this.value,false)">${esc(e.text||'')}</textarea>
@@ -540,7 +540,14 @@ function closeRepeat(id){
 
 function addEntry(){
  if(!db.subjects.length){showView('settings');return}
- const e={id:uid(),date:current,subject:db.subjects[0],text:'',created:new Date().toISOString()};
+ const defaultSubject=db.subjects[0];
+ const e={
+   id:uid(),
+   date:current,
+   subject:defaultSubject,
+   text:latestTextForSubject(defaultSubject),
+   created:new Date().toISOString()
+ };
  db.entries.push(e);
  save();
  swipedId=null;
@@ -553,6 +560,27 @@ function addEntry(){
    row?.querySelector('textarea')?.focus();
  },40);
 }
+
+function changeEntrySubject(id,subject){
+  const e=db.entries.find(x=>x.id===id);
+  if(!e)return;
+
+  e.subject=subject;
+  e.text=latestTextForSubject(subject,id);
+  save();
+  openEdit.add(id);
+  renderDay();
+
+  setTimeout(()=>{
+    const row=document.querySelector(`.row[data-id="${id}"]`);
+    const ta=row?.querySelector('textarea');
+    if(ta){
+      ta.focus();
+      ta.setSelectionRange(ta.value.length,ta.value.length);
+    }
+  },30);
+}
+
 function updateEntry(id,k,v,rerender){
  let e=db.entries.find(x=>x.id===id);
  if(!e)return;
@@ -650,6 +678,23 @@ function runSearch(){
  document.getElementById('results').innerHTML=a.length?a.map(e=>{let [fg,bg]=colors(e.subject);return `<div class="result" onclick="goDate('${e.date}')" style="background:${bg};padding:10px;border-radius:9px;margin-top:6px"><b style="color:${fg}">${pretty(e.date)} · ${esc(e.subject)}</b><div>${esc(e.text||'(boş)')}</div></div>`}).join(''):'<p class="muted">Kayıt bulunamadı.</p>'
 }
 
+
+
+function latestTextForSubject(subject,excludeId=null){
+  const found=db.entries
+    .filter(e=>
+      e.subject===subject &&
+      e.id!==excludeId &&
+      String(e.text||'').trim()!==''
+    )
+    .sort((a,b)=>{
+      const byDate=b.date.localeCompare(a.date);
+      if(byDate!==0)return byDate;
+      return (b.created||'').localeCompare(a.created||'');
+    })[0];
+
+  return found ? found.text : '';
+}
 
 function showLatestStatus(){
   const latest=[];
